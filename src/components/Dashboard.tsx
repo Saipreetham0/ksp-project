@@ -1,5 +1,6 @@
 // app/components/Dashboard.tsx
-import React from 'react';
+// "use client";
+// import React from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
