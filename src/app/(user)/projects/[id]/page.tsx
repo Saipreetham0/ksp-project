@@ -1,330 +1,3 @@
-// // src/app/projects/[id]/page.tsx
-// "use client";
-
-// import React, { useState, useEffect } from "react";
-// import { useParams, useRouter } from "next/navigation";
-// import {
-//   Card,
-//   CardContent,
-//   CardHeader,
-//   CardTitle,
-//   CardFooter,
-// } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// // import { Textarea } from "@/components/ui/textarea";
-// import { Badge } from "@/components/ui/badge";
-// import {
-//   Clock,
-//   Users,
-//   Laptop,
-//   Calendar,
-//   MapPin,
-//   Truck,
-//   // CheckCircle,
-// } from "lucide-react";
-// import { supabase } from "@/lib/supabase";
-// import { Project } from "@/types/project";
-
-// interface DeliveryAddress {
-//   street: string;
-//   city: string;
-//   state: string;
-//   postalCode: string;
-//   country: string;
-//   contactNumber: string;
-// }
-
-// export default function ProjectDetailsPage() {
-//   const params = useParams();
-//   const router = useRouter();
-//   const [project, setProject] = useState<Project | null>(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
-//   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress>({
-//     street: "",
-//     city: "",
-//     state: "",
-//     postalCode: "",
-//     country: "",
-//     contactNumber: "",
-//   });
-//   const [addressSubmitting, setAddressSubmitting] = useState(false);
-
-//   useEffect(() => {
-//     fetchProjectDetails();
-//   }, [params.id]);
-
-//   const fetchProjectDetails = async () => {
-//     try {
-//       const { data, error } = await supabase
-//         .from("projects")
-//         .select("*")
-//         .eq("id", params.id)
-//         .single();
-
-//       if (error) throw error;
-//       setProject(data);
-//       // Check if delivery address exists
-//       const { data: deliveryData } = await supabase
-//         .from("delivery_addresses")
-//         .select("*")
-//         .eq("project_id", params.id)
-//         .single();
-
-//       if (deliveryData) {
-//         setDeliveryAddress(deliveryData);
-//         setShowDeliveryForm(true);
-//       }
-//     } catch (err) {
-//       console.error("Error fetching project:", err);
-//       setError("Failed to load project details");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleDeliverySubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     setAddressSubmitting(true);
-
-//     try {
-//       const { error } = await supabase.from("delivery_addresses").upsert([
-//         {
-//           project_id: params.id,
-//           ...deliveryAddress,
-//           updated_at: new Date().toISOString(),
-//         },
-//       ]);
-
-//       if (error) throw error;
-
-//       // Update project status to indicate delivery information is added
-//       await supabase
-//         .from("projects")
-//         .update({ delivery_status: "pending" })
-//         .eq("id", params.id);
-
-//       setShowDeliveryForm(false);
-//       fetchProjectDetails(); // Refresh project data
-//     } catch (err) {
-//       console.error("Error submitting delivery address:", err);
-//       setError("Failed to save delivery address");
-//     } finally {
-//       setAddressSubmitting(false);
-//     }
-//   };
-
-//   if (loading) return <div className="p-6">Loading...</div>;
-//   if (error) return <div className="p-6 text-red-500">{error}</div>;
-//   if (!project) return <div className="p-6">Project not found</div>;
-
-//   return (
-//     <div className="p-6 max-w-4xl mx-auto space-y-6">
-//       <Card>
-//         <CardHeader>
-//           <div className="flex items-center justify-between">
-//             <CardTitle className="text-2xl font-bold">{project.title}</CardTitle>
-//             <Badge variant={project.status === "completed" ? "secondary" : "default"}>
-//               {project.status}
-//             </Badge>
-//           </div>
-//         </CardHeader>
-
-//         <CardContent className="space-y-6">
-//           <div className="prose max-w-none">
-//             <p className="text-gray-600">{project.description}</p>
-//           </div>
-
-//           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-//             <div className="flex items-center gap-2">
-//               <Laptop className="h-5 w-5 text-gray-500" />
-//               <span className="text-sm">{project.technology}</span>
-//             </div>
-//             <div className="flex items-center gap-2">
-//               <Users className="h-5 w-5 text-gray-500" />
-//               <span className="text-sm">{project.team_size} members</span>
-//             </div>
-//             <div className="flex items-center gap-2">
-//               <Calendar className="h-5 w-5 text-gray-500" />
-//               <span className="text-sm">{project.timeline} weeks</span>
-//             </div>
-//             <div className="flex items-center gap-2">
-//               <Clock className="h-5 w-5 text-gray-500" />
-//               <span className="text-sm">
-//                 {new Date(project.created_at).toLocaleDateString()}
-//               </span>
-//             </div>
-//           </div>
-
-//           {project.status === "completed" && (
-//             <div className="border-t pt-6">
-//               <div className="flex items-center justify-between mb-4">
-//                 <h3 className="text-lg font-semibold flex items-center gap-2">
-//                   <Truck className="h-5 w-5" />
-//                   Delivery Information
-//                 </h3>
-//                 {!showDeliveryForm && (
-//                   <Button
-//                     onClick={() => setShowDeliveryForm(true)}
-//                     variant="outline"
-//                   >
-//                     {deliveryAddress.street ? "Update Address" : "Add Address"}
-//                   </Button>
-//                 )}
-//               </div>
-
-//               {showDeliveryForm ? (
-//                 <form onSubmit={handleDeliverySubmit} className="space-y-4">
-//                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                     <div className="space-y-2">
-//                       <Label htmlFor="street">Street Address</Label>
-//                       <Input
-//                         id="street"
-//                         value={deliveryAddress.street}
-//                         onChange={(e) =>
-//                           setDeliveryAddress({
-//                             ...deliveryAddress,
-//                             street: e.target.value,
-//                           })
-//                         }
-//                         required
-//                       />
-//                     </div>
-//                     <div className="space-y-2">
-//                       <Label htmlFor="city">City</Label>
-//                       <Input
-//                         id="city"
-//                         value={deliveryAddress.city}
-//                         onChange={(e) =>
-//                           setDeliveryAddress({
-//                             ...deliveryAddress,
-//                             city: e.target.value,
-//                           })
-//                         }
-//                         required
-//                       />
-//                     </div>
-//                     <div className="space-y-2">
-//                       <Label htmlFor="state">State/Province</Label>
-//                       <Input
-//                         id="state"
-//                         value={deliveryAddress.state}
-//                         onChange={(e) =>
-//                           setDeliveryAddress({
-//                             ...deliveryAddress,
-//                             state: e.target.value,
-//                           })
-//                         }
-//                         required
-//                       />
-//                     </div>
-//                     <div className="space-y-2">
-//                       <Label htmlFor="postalCode">Postal Code</Label>
-//                       <Input
-//                         id="postalCode"
-//                         value={deliveryAddress.postalCode}
-//                         onChange={(e) =>
-//                           setDeliveryAddress({
-//                             ...deliveryAddress,
-//                             postalCode: e.target.value,
-//                           })
-//                         }
-//                         required
-//                       />
-//                     </div>
-//                     <div className="space-y-2">
-//                       <Label htmlFor="country">Country</Label>
-//                       <Input
-//                         id="country"
-//                         value={deliveryAddress.country}
-//                         onChange={(e) =>
-//                           setDeliveryAddress({
-//                             ...deliveryAddress,
-//                             country: e.target.value,
-//                           })
-//                         }
-//                         required
-//                       />
-//                     </div>
-//                     <div className="space-y-2">
-//                       <Label htmlFor="contactNumber">Contact Number</Label>
-//                       <Input
-//                         id="contactNumber"
-//                         type="tel"
-//                         value={deliveryAddress.contactNumber}
-//                         onChange={(e) =>
-//                           setDeliveryAddress({
-//                             ...deliveryAddress,
-//                             contactNumber: e.target.value,
-//                           })
-//                         }
-//                         required
-//                       />
-//                     </div>
-//                   </div>
-
-//                   <div className="flex gap-4">
-//                     <Button
-//                       type="submit"
-//                       className="flex-1"
-//                       disabled={addressSubmitting}
-//                     >
-//                       {addressSubmitting ? "Saving..." : "Save Address"}
-//                     </Button>
-//                     <Button
-//                       type="button"
-//                       variant="outline"
-//                       onClick={() => setShowDeliveryForm(false)}
-//                     >
-//                       Cancel
-//                     </Button>
-//                   </div>
-//                 </form>
-//               ) : (
-//                 deliveryAddress.street && (
-//                   <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-//                     <div className="flex items-start gap-2">
-//                       <MapPin className="h-5 w-5 text-gray-500 mt-1" />
-//                       <div>
-//                         <p>{deliveryAddress.street}</p>
-//                         <p>
-//                           {deliveryAddress.city}, {deliveryAddress.state}{" "}
-//                           {deliveryAddress.postalCode}
-//                         </p>
-//                         <p>{deliveryAddress.country}</p>
-//                         <p className="text-sm text-gray-500 mt-2">
-//                           Contact: {deliveryAddress.contactNumber}
-//                         </p>
-//                       </div>
-//                     </div>
-//                   </div>
-//                 )
-//               )}
-//             </div>
-//           )}
-//         </CardContent>
-
-//         <CardFooter className="border-t bg-gray-50">
-//           <div className="flex justify-between w-full items-center">
-//             <Badge variant="outline" className="capitalize">
-//               {project.type} Project
-//             </Badge>
-//             <Button
-//               variant="ghost"
-//               onClick={() => router.back()}
-//             >
-//               Back to Dashboard
-//             </Button>
-//           </div>
-//         </CardFooter>
-//       </Card>
-//     </div>
-//   );
-// }
-
 // src/app/projects/[id]/page.tsx
 "use client";
 
@@ -334,11 +7,13 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
-import { Project, DeliveryAddress } from "@/types/project";
+import { Project, DeliveryAddress, PaymentTransaction } from "@/types/project";
 import { ProjectHeader } from "@/components/projects/ProjectHeader";
 import { ProjectMetrics } from "@/components/projects/ProjectMetrics";
 import { DeliverySection } from "@/components/projects/DeliverySection";
 import { ErrorBoundary } from "@/components/projects/ErrorBoundary";
+import RazorpayPayment from "@/components/payment/RazorpayPayment";
+// import { CheckCircleIcon, CircleAlert } from "lucide-react";
 
 function LoadingState() {
   return (
@@ -368,6 +43,9 @@ export default function ProjectDetailsPage() {
   const projectId = params?.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [paymentTransaction, setPaymentTransaction] =
+    useState<PaymentTransaction | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
@@ -380,6 +58,10 @@ export default function ProjectDetailsPage() {
     contactNumber: "",
   });
   const [addressSubmitting, setAddressSubmitting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "paid">(
+    "pending"
+  );
 
   useEffect(() => {
     if (!projectId) {
@@ -388,7 +70,7 @@ export default function ProjectDetailsPage() {
       return;
     }
     fetchProjectDetails();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const fetchProjectDetails = async () => {
@@ -404,20 +86,69 @@ export default function ProjectDetailsPage() {
       if (!projectData) throw new Error("Project not found");
 
       setProject(projectData);
+      setPaymentStatus(projectData.payment_status);
 
-      const { data: deliveryData, error: deliveryError } = await supabase
-        .from("delivery_addresses")
-        .select("*")
-        .eq("project_id", projectId)
-        .single();
+      if (projectData.payment_status === "paid") {
+        const { data: paymentData, error: paymentError } = await supabase
+          .from("payment_transactions")
+          .select("*")
+          .eq("project_id", projectId)
+          .single();
 
-      if (deliveryError && deliveryError.code !== "PGRST116") {
-        throw deliveryError;
+        if (paymentError) throw paymentError;
+        if (paymentData) {
+          setPaymentTransaction(paymentData);
+        }
       }
 
-      if (deliveryData) {
-        setDeliveryAddress(deliveryData);
-        setShowDeliveryForm(false);
+      //     const { data: deliveryData, error: deliveryError } = await supabase
+      //       .from("delivery_addresses")
+      //       .select("*")
+      //       .eq("project_id", projectId)
+      //       .single();
+
+      //     if (deliveryError && deliveryError.code !== "PGRST116") {
+      //       throw deliveryError;
+      //     }
+
+      //     if (deliveryData) {
+      //       setDeliveryAddress(deliveryData);
+      //       setShowDeliveryForm(false);
+      //     }
+      //   } catch (err) {
+      //     console.error("Error fetching project:", err);
+      //     setError(
+      //       err instanceof Error ? err.message : "Failed to load project details"
+      //     );
+      //   } finally {
+      //     setLoading(false);
+      //   }
+      // };
+
+      // Fetch delivery address with proper error handling
+      try {
+        const { data: deliveryData, error: deliveryError } = await supabase
+          .from("delivery_addresses")
+          .select("street, city, state, postal_code, country, contact_number")
+          .eq("project_id", projectId)
+          .maybeSingle();
+
+        if (deliveryError) {
+          console.warn("Error fetching delivery address:", deliveryError);
+        } else if (deliveryData) {
+          setDeliveryAddress({
+            street: deliveryData.street || "",
+            city: deliveryData.city || "",
+            state: deliveryData.state || "",
+            postalCode: deliveryData.postal_code || "",
+            country: deliveryData.country || "",
+            contactNumber: deliveryData.contact_number || "",
+          });
+          setShowDeliveryForm(false);
+        }
+      } catch (deliveryErr) {
+        console.warn("Failed to fetch delivery address:", deliveryErr);
+        // Don't throw here - we want to continue even if delivery address fetch fails
       }
     } catch (err) {
       console.error("Error fetching project:", err);
@@ -439,15 +170,21 @@ export default function ProjectDetailsPage() {
 
     setAddressSubmitting(true);
     try {
+      // Map the delivery address to match the database column names
+      const mappedAddress = {
+        project_id: projectId,
+        street: deliveryAddress.street,
+        city: deliveryAddress.city,
+        state: deliveryAddress.state,
+        postal_code: deliveryAddress.postalCode,
+        country: deliveryAddress.country,
+        contact_number: deliveryAddress.contactNumber,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error: deliveryError } = await supabase
         .from("delivery_addresses")
-        .upsert([
-          {
-            project_id: projectId,
-            ...deliveryAddress,
-            updated_at: new Date().toISOString(),
-          },
-        ]);
+        .upsert([mappedAddress]);
 
       if (deliveryError) throw deliveryError;
 
@@ -467,6 +204,72 @@ export default function ProjectDetailsPage() {
       );
     } finally {
       setAddressSubmitting(false);
+    }
+  };
+
+  // const handleDeliverySubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!projectId || !project) return;
+
+  //   setAddressSubmitting(true);
+  //   try {
+  //     const { error: deliveryError } = await supabase
+  //       .from("delivery_addresses")
+  //       .upsert([
+  //         {
+  //           project_id: projectId,
+  //           ...deliveryAddress,
+  //           updated_at: new Date().toISOString(),
+  //         },
+  //       ]);
+
+  //     if (deliveryError) throw deliveryError;
+
+  //     const { error: projectError } = await supabase
+  //       .from("projects")
+  //       .update({ delivery_status: "pending" })
+  //       .eq("id", projectId);
+
+  //     if (projectError) throw projectError;
+
+  //     await fetchProjectDetails();
+  //     setShowDeliveryForm(false);
+  //   } catch (err) {
+  //     console.error("Error submitting delivery address:", err);
+  //     setError(
+  //       err instanceof Error ? err.message : "Failed to save delivery address"
+  //     );
+  //   } finally {
+  //     setAddressSubmitting(false);
+  //   }
+  // };
+
+  const handlePaymentSuccess = async () => {
+    try {
+      const { error: projectError } = await supabase
+        .from("projects")
+        .update({ payment_status: "paid" })
+        .eq("id", projectId);
+
+      if (projectError) throw projectError;
+      setPaymentStatus("paid");
+
+      const { data: paymentData, error: paymentError } = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .eq("project_id", projectId)
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      if (paymentData) {
+        setPaymentTransaction(paymentData);
+      }
+    } catch (err) {
+      console.error("Error updating payment status:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to update payment status"
+      );
     }
   };
 
@@ -494,20 +297,42 @@ export default function ProjectDetailsPage() {
               timeline={project.timeline}
               createdAt={project.created_at}
             />
+           
+            {project.amount > 0 && (
+              <div className="flex flex-col space-y-2">
+                <h3 className="text-lg font-semibold">Payment</h3>
+                {paymentTransaction ? (
+                  <div>
+                    <p>
+                      Payment has been made. Order details:{" "}
+                      {paymentTransaction.order_id}
+                    </p>
 
-            {project.status === "completed" && (
-              <DeliverySection
-                showForm={showDeliveryForm}
-                deliveryAddress={deliveryAddress}
-                onAddressChange={handleAddressChange}
-                onSubmit={handleDeliverySubmit}
-                onToggleForm={() => setShowDeliveryForm(!showDeliveryForm)}
-                isSubmitting={addressSubmitting}
-              />
+                    <p>Amount: {paymentTransaction.amount}</p>
+                    <p>Status: {paymentTransaction.status}</p>
+                  </div>
+                ) : (
+                  <RazorpayPayment
+                    amount={project.amount}
+                    projectId={projectId}
+                    onPaymentSuccess={handlePaymentSuccess}
+                  />
+                )}
+              </div>
             )}
-          </CardContent>
 
-          {/* <CardFooter className="border-t bg-gray-50"> */}
+            {project.status === "Processing" &&
+              project.delivery_status === "yes" && (
+                <DeliverySection
+                  showForm={showDeliveryForm}
+                  deliveryAddress={deliveryAddress}
+                  onAddressChange={handleAddressChange}
+                  onSubmit={handleDeliverySubmit}
+                  onToggleForm={() => setShowDeliveryForm(!showDeliveryForm)}
+                  isSubmitting={addressSubmitting}
+                />
+              )}
+          </CardContent>
 
           <CardFooter className="border-t bg-gray-50">
             <div className="flex justify-between w-full items-center">

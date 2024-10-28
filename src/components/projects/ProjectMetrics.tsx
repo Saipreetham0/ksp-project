@@ -1,5 +1,6 @@
 // src/components/projects/ProjectMetrics.tsx
 import { Clock, Users, Laptop, Calendar } from "lucide-react";
+import React from "react";
 
 interface ProjectMetricsProps {
   technology: string;

@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+// import { ReactNode } from "react";
 
 // src/types/project.ts
 export type ProjectType = "mini" | "major" | "custom";
@@ -18,7 +18,7 @@ export type ProjectStatus = "pending" | "approved" | "rejected";
 // }
 
 export interface Project {
-  amount: ReactNode;
+  amount: number;
   id: number;
   user_id: string;
   title: string;
@@ -72,3 +72,17 @@ export interface FormData {
 //   timeline: string;
 //   teamSize: number;
 // }
+
+export interface PaymentTransaction {
+  id: string;
+  user_id: string;
+  project_id: string;
+  order_id: string;
+  payment_id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  payment_method: string;
+  currency: string;
+  failure_reason?: string;
+}

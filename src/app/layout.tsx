@@ -1,4 +1,3 @@
-
 // import type { Metadata } from "next";
 // import Footer from "@/components/Footer";
 // import Navbar from "@/components/NavBar";
@@ -9,7 +8,7 @@ import "@/app/globals.css";
 //   description: "Empowering students with cutting-edge IoT and ML solutions",
 // };
 
-import { Providers } from './providers';
+import { Providers } from "./providers";
 
 export default function RootLayout({
   children,
@@ -20,6 +19,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <script src="https://checkout.razorpay.com/v1/checkout.js" defer />
+        <script src="https://cdn.razorpay.com/widgets/affordability/affordability.js"defer />
       </head>
       <body
         suppressHydrationWarning={true}

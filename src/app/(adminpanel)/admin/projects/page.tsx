@@ -1,18 +1,20 @@
 "use client";
-
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Pagination,
   PaginationContent,
@@ -20,9 +22,9 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Clock,
   Users,
@@ -32,50 +34,46 @@ import {
   XCircle,
   Clock3,
   Search,
-} from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { Project } from "@/types/project";
+} from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { Project } from '@/types/project';
 
 const ITEMS_PER_PAGE = 9;
 
 const ProjectsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
   const fetchProjects = useCallback(async () => {
-    if (!userId) return;
-
     setLoading(true);
     try {
       let query = supabase
-        .from("projects")
-        .select("*", { count: "exact" })
-        .eq("user_id", userId);
+        .from('projects')
+        .select('*', { count: 'exact' });
 
+      // Apply filters
       if (searchQuery) {
-        query = query.or(
-          `title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
-        );
+        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       }
       if (selectedType) {
-        query = query.eq("type", selectedType);
+        query = query.eq('type', selectedType);
       }
       if (selectedStatus) {
-        query = query.eq("status", selectedStatus);
+        query = query.eq('status', selectedStatus);
       }
 
+      // Apply pagination
       const start = (currentPage - 1) * ITEMS_PER_PAGE;
       const end = start + ITEMS_PER_PAGE - 1;
 
       const { data, count, error } = await query
-        .order("created_at", { ascending: false })
+        .order('created_at', { ascending: false })
         .range(start, end);
 
       if (error) throw error;
@@ -83,29 +81,15 @@ const ProjectsPage = () => {
       setProjects(data || []);
       setTotalPages(Math.ceil((count || 0) / ITEMS_PER_PAGE));
     } catch (error) {
-      console.error("Error fetching projects:", error);
+      console.error('Error fetching projects:', error);
     } finally {
       setLoading(false);
     }
-  }, [userId, searchQuery, selectedType, selectedStatus, currentPage]);
+  }, [searchQuery, selectedType, selectedStatus, currentPage]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        router.push("/login");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
-
-  useEffect(() => {
-    if (userId) {
-      fetchProjects();
-    }
-  }, [userId, fetchProjects]);
+    fetchProjects();
+  }, [fetchProjects]);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -133,21 +117,13 @@ const ProjectsPage = () => {
     }
   };
 
-  if (!userId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col gap-6 mb-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Projects</h1>
-          <Button onClick={() => router.push("/dashboard")} variant="outline">
+          <Button onClick={() => router.push('/dashboard')} variant="outline">
             Submit New Project
           </Button>
         </div>
@@ -168,12 +144,7 @@ const ProjectsPage = () => {
                 </div>
               </div>
               <div className="flex gap-4">
-                <Select
-                  value={selectedType || "all"}
-                  onValueChange={(value) =>
-                    setSelectedType(value === "all" ? null : value)
-                  }
-                >
+                <Select value={selectedType || "all"} onValueChange={(value) => setSelectedType(value === "all" ? null : value)}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Project Type" />
                   </SelectTrigger>
@@ -184,12 +155,7 @@ const ProjectsPage = () => {
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select
-                  value={selectedStatus || "all"}
-                  onValueChange={(value) =>
-                    setSelectedStatus(value === "all" ? null : value)
-                  }
-                >
+                <Select value={selectedStatus || "all"} onValueChange={(value) => setSelectedStatus(value === "all" ? null : value)}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -226,7 +192,7 @@ const ProjectsPage = () => {
               <Card
                 key={project.id}
                 className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => router.push(`/projects/${project.id}`)}
+                onClick={() => router.push(`/admin/projects/${project.id}`)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -261,9 +227,7 @@ const ProjectsPage = () => {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Clock className="h-4 w-4" />
-                        <span>
-                          {new Date(project.created_at).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(project.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -274,9 +238,7 @@ const ProjectsPage = () => {
 
           {projects.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">
-                No projects found matching your criteria
-              </p>
+              <p className="text-gray-500">No projects found matching your criteria</p>
             </div>
           )}
 
@@ -287,12 +249,8 @@ const ProjectsPage = () => {
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className={
-                        currentPage === 1
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                     />
                   </PaginationItem>
                   {[...Array(totalPages)].map((_, i) => (
@@ -307,14 +265,8 @@ const ProjectsPage = () => {
                   ))}
                   <PaginationItem>
                     <PaginationNext
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      className={
-                        currentPage === totalPages
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                     />
                   </PaginationItem>
                 </PaginationContent>
