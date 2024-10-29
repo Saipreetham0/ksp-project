@@ -3,9 +3,6 @@ import { User } from "firebase/auth";
 
 export type UserRole = "user" | "admin" | "moderator";
 
-
-
-
 // export interface UserData {
 //   uid: string;
 //   email: string;
@@ -26,7 +23,6 @@ export interface UserData {
   lastLogin: string;
   phoneNumber?: string;
   isPhoneVerified?: boolean;
-
 }
 
 export interface AuthState {

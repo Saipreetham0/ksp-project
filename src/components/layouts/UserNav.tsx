@@ -155,7 +155,7 @@ export function UserNav() {
             </div>
             <div className="border-t border-gray-100">
               <Link
-                href="/dashboard/profile"
+                href="/profile"
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setOpen(false)}
               >
@@ -163,7 +163,7 @@ export function UserNav() {
                 Profile
               </Link>
               <Link
-                href="/dashboard/settings"
+                href="/settings"
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setOpen(false)}
               >
