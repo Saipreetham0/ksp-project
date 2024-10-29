@@ -1,6 +1,19 @@
-export interface User {
+// export interface User {
+//     uid: string;
+//     email: string | null;
+//     displayName: string | null;
+//     photoURL: string | null;
+//   }
+
+
+ export interface User {
     uid: string;
-    email: string | null;
-    displayName: string | null;
-    photoURL: string | null;
+    email: string;
+    displayName: string;
+    photoURL: string;
+    role: string;
+    createdAt: string;
+    lastLogin: string;
+    isPhoneVerified: boolean;
+    phoneNumber: string | null;
   }

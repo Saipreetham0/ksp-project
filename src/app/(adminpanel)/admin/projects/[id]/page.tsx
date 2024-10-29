@@ -61,7 +61,7 @@ export default function ProjectDetailsPage() {
       return;
     }
     fetchProjectDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [projectId]);
 
   const fetchProjectDetails = async () => {

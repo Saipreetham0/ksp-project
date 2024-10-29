@@ -72,14 +72,18 @@ export default function ProfilePage() {
     try {
       await updateDoc(doc(db, "users", profile.uid), {
         phoneNumber: phoneNumber,
-        isPhoneVerified: false
+        isPhoneVerified: false,
       });
 
-      setProfile(prev => prev ? {
-        ...prev,
-        phoneNumber: phoneNumber,
-        isPhoneVerified: false
-      } : null);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              phoneNumber: phoneNumber,
+              isPhoneVerified: false,
+            }
+          : null
+      );
 
       setIsEditing(false);
     } catch (error) {
@@ -102,7 +106,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-[100px]" />
                   <Skeleton className="h-6 w-full" />
@@ -120,8 +124,12 @@ export default function ProfilePage() {
       <div className="container mx-auto p-6 max-w-2xl">
         <Card>
           <CardContent className="p-6">
-            <h2 className="text-xl font-semibold text-gray-700">Profile Not Found</h2>
-            <p className="text-gray-600 mt-2">Unable to load profile information.</p>
+            <h2 className="text-xl font-semibold text-gray-700">
+              Profile Not Found
+            </h2>
+            <p className="text-gray-600 mt-2">
+              Unable to load profile information.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -159,7 +167,9 @@ export default function ProfilePage() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
-              <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
+              <h3 className="text-sm font-medium text-gray-500">
+                Phone Number
+              </h3>
               <div className="flex items-center gap-2">
                 {isEditing ? (
                   <div className="flex items-center gap-2 w-full">
@@ -192,7 +202,10 @@ export default function ProfilePage() {
                   <>
                     <span>{profile.phoneNumber || "Not provided"}</span>
                     {profile.isPhoneVerified && (
-                      <Badge variant="outline" className="bg-green-100 text-green-800">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-100 text-green-800"
+                      >
                         Verified
                       </Badge>
                     )}
@@ -209,7 +222,9 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-500">Account Created</h3>
+              <h3 className="text-sm font-medium text-gray-500">
+                Account Created
+              </h3>
               <p>
                 {profile.createdAt
                   ? format(new Date(profile.createdAt), "PPP")
@@ -229,7 +244,9 @@ export default function ProfilePage() {
 
           <div className="pt-4 border-t">
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-medium text-gray-500">Account Status</h3>
+              <h3 className="text-sm font-medium text-gray-500">
+                Account Status
+              </h3>
               <Badge variant="outline" className="ml-2">
                 Active
               </Badge>

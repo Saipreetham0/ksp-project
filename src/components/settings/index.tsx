@@ -72,7 +72,7 @@ export default function SettingsPage({ initialSettings }: SettingsProps) {
     setSaving(true);
     try {
       await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        settings: settings,
+        // settings: settings,
       });
       toast({
         title: "Settings saved successfully",

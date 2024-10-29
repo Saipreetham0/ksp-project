@@ -19,7 +19,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <script src="https://checkout.razorpay.com/v1/checkout.js" defer />
-        <script src="https://cdn.razorpay.com/widgets/affordability/affordability.js"defer />
       </head>
       <body
         suppressHydrationWarning={true}
