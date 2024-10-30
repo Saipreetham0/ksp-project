@@ -5,17 +5,6 @@ export type ProjectType = "mini" | "major" | "custom";
 
 export type ProjectStatus = "pending" | "approved" | "rejected";
 
-// export interface Project {
-//   id: string;
-//   title: string;
-//   description: string;
-//   type: string;
-//   technology: string;
-//   timeline: number;
-//   team_size: number;
-//   status: "pending" | "completed" | "rejected";
-//   created_at: string;
-// }
 
 export interface Project {
   amount: number;
@@ -30,6 +19,8 @@ export interface Project {
   status: string;
   created_at: string;
   delivery_status?: string;
+ 
+  payment_status: String;
 }
 
 export interface FormData {
@@ -42,36 +33,14 @@ export interface FormData {
   status: string;
 }
 
-// export interface Project {
-//     id: string;
-//     title: string;
-//     description: string;
-//     status: "pending" | "in_progress" | "completed";
-//     technology: string;
-//     team_size: number;
-//     timeline: number;
-//     type: string;
-//     created_at: string;
-//     delivery_status?: "pending" | "delivered";
-//   }
-
-  export interface DeliveryAddress {
-    street: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    contactNumber: string;
-  }
-
-// export interface ProjectFormData {
-//   title: string;
-//   description: string;
-//   type: ProjectType;
-//   technology: string;
-//   timeline: string;
-//   teamSize: number;
-// }
+export interface DeliveryAddress {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  contactNumber: string;
+}
 
 export interface PaymentTransaction {
   id: string;
@@ -86,3 +55,25 @@ export interface PaymentTransaction {
   currency: string;
   failure_reason?: string;
 }
+
+
+// export type ProjectStatus = 'pending' | 'active' | 'completed' | 'cancelled';
+// export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
+// export type DeliveryStatus = 'pending' | 'delivered' | 'not_set';
+// export type StatusType = 'status' | 'payment' | 'delivery';
+
+// export interface Project {
+//   id: string;
+//   title: string;
+//   description: string;
+//   type: string;
+//   technology: string;
+//   timeline: number;
+//   team_size: number;
+//   status: String;
+//   created_at: string;
+//   user_id: string;
+//   delivery_status?: String | null;
+//   amount: number;
+//   payment_status: String;
+// }

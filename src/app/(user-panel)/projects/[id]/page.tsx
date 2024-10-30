@@ -14,11 +14,71 @@ import { DeliverySection } from "@/components/projects/DeliverySection";
 import { ErrorBoundary } from "@/components/projects/ErrorBoundary";
 import RazorpayPayment from "@/components/payment/RazorpayPayment";
 // import { CheckCircleIcon, CircleAlert } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-function LoadingState() {
+// function LoadingState() {
+//   return (
+//     <div className="p-6 flex justify-center items-center min-h-[400px]">
+//       <p className="text-gray-600">Loading project details...</p>
+//     </div>
+//   );
+// }
+
+
+function ProjectDetailsSkeleton() {
   return (
-    <div className="p-6 flex justify-center items-center min-h-[400px]">
-      <p className="text-gray-600">Loading project details...</p>
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Card>
+        {/* Header Skeleton */}
+        <div className="p-6 border-b space-y-4">
+          <Skeleton className="h-8 w-2/3" />
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-5 w-24" />
+          </div>
+        </div>
+
+        <CardContent className="space-y-6">
+          {/* Description Skeleton */}
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/6" />
+          </div>
+
+          {/* Metrics Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+            ))}
+          </div>
+
+          {/* Payment Section Skeleton */}
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-12 w-full max-w-sm" />
+          </div>
+
+          {/* Delivery Section Skeleton */}
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-32" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="border-t bg-gray-50">
+          <div className="flex justify-between w-full items-center">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
@@ -273,7 +333,9 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  if (loading) return <LoadingState />;
+  // if (loading) return <LoadingState />;
+  if (loading) return <ProjectDetailsSkeleton />;
+
   if (error) return <ErrorState error={error} onBack={() => router.back()} />;
   if (!project)
     return (
@@ -297,7 +359,7 @@ export default function ProjectDetailsPage() {
               timeline={project.timeline}
               createdAt={project.created_at}
             />
-           
+
             {project.amount > 0 && (
               <div className="flex flex-col space-y-2">
                 <h3 className="text-lg font-semibold">Payment</h3>

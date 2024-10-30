@@ -1,0 +1,127 @@
+// // scr/components/admin/ProjectDownloads.tsx
+// // components/ProjectDownloadLinks.tsx
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Card,
+//   CardContent,
+//   CardHeader,
+//   CardTitle,
+// } from "@/components/ui/card";
+// import { Button } from "@/components/ui/button";
+// import { Input } from "@/components/ui/input";
+// import { Label } from "@/components/ui/label";
+// import { supabase } from '@/lib/supabase';
+
+// interface ProjectDownloadLink {
+//   id: string;
+//   project_id: string;
+//   code_download: string;
+//   ppt_download: string;
+//   doc_download: string;
+//   updated_at: string;
+// }
+
+// const ProjectDownloadLinks = ({ projectId }: { projectId: string }) => {
+//   const [downloadLinks, setDownloadLinks] = useState<ProjectDownloadLink | null>(null);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+
+//   const fetchDownloadLinks = async () => {
+//     try {
+//       setLoading(true);
+//       const { data, error } = await supabase
+//         .from('project_download_links')
+//         .select('*')
+//         .eq('project_id', projectId)
+//         .single();
+
+//       if (error) throw error;
+//       setDownloadLinks(data || null);
+//     } catch (err) {
+//       console.error('Error fetching download links:', err);
+//       setError(err instanceof Error ? err.message : 'Failed to load download links');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchDownloadLinks();
+//   }, [projectId]);
+
+//   const saveDownloadLinks = async () => {
+//     try {
+//       const { data, error } = await supabase
+//         .from('project_download_links')
+//         .upsert(downloadLinks)
+//         .eq('project_id', projectId);
+
+//       if (error) throw error;
+//       setDownloadLinks(data && data.length > 0 ? data[0] : null);
+//     } catch (err) {
+//       console.error('Error saving download links:', err);
+//       setError(err instanceof Error ? err.message : 'Failed to save download links');
+//     }
+//   };
+
+//   const handleLinkChange = (fieldName: string, value: string) => {
+//     if (downloadLinks) {
+//       setDownloadLinks({ ...downloadLinks, [fieldName]: value });
+//     }
+//   };
+
+//   if (loading) {
+//     return <div>Loading...</div>;
+//   }
+
+//   if (error) {
+//     return <div>Error: {error}</div>;
+//   }
+
+//   return (
+//     <Card>
+//       <CardHeader>
+//         <CardTitle>Project Download Links</CardTitle>
+//       </CardHeader>
+//       <CardContent>
+//         {downloadLinks ? (
+//           <div className="space-y-4">
+//             <div className="grid grid-cols-2 gap-4">
+//               <div className="space-y-2">
+//                 <Label htmlFor="code_download">Code Download Link</Label>
+//                 <Input
+//                   id="code_download"
+//                   value={downloadLinks.code_download}
+//                   onChange={(e) => handleLinkChange('code_download', e.target.value)}
+//                 />
+//               </div>
+//               <div className="space-y-2">
+//                 <Label htmlFor="ppt_download">Presentation Download Link</Label>
+//                 <Input
+//                   id="ppt_download"
+//                   value={downloadLinks.ppt_download}
+//                   onChange={(e) => handleLinkChange('ppt_download', e.target.value)}
+//                 />
+//               </div>
+//               <div className="space-y-2">
+//                 <Label htmlFor="doc_download">Document Download Link</Label>
+//                 <Input
+//                   id="doc_download"
+//                   value={downloadLinks.doc_download}
+//                   onChange={(e) => handleLinkChange('doc_download', e.target.value)}
+//                 />
+//               </div>
+//             </div>
+//             <div className="flex justify-end">
+//               <Button onClick={saveDownloadLinks}>Save Links</Button>
+//             </div>
+//           </div>
+//         ) : (
+//           <div>No download links available.</div>
+//         )}
+//       </CardContent>
+//     </Card>
+//   );
+// };
+
+// export default ProjectDownloadLinks;

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,13 @@ export default function Login() {
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                 alt="Google logo"
               /> */}
+              <Image
+                className="w-5 h-5 mr-2"
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                alt="Google logo"
+                width={10}
+                height={10}
+              />
               Sign in with Google
             </>
           )}
