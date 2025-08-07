@@ -1,27 +1,25 @@
-// import { ReactNode } from "react";
+// Enhanced types - now extending database types for backward compatibility
+import { Order, OrderStatus, PaymentStatus, DeliveryStatus } from './database';
 
-// src/types/project.ts
+// Legacy types for backward compatibility
 export type ProjectType = "mini" | "major" | "custom";
-
 export type ProjectStatus = "pending" | "approved" | "rejected";
 
-
-export interface Project {
-  amount: number;
-  id: number;
-  user_id: string;
-  title: string;
-  description: string;
-  type: string;
-  technology: string;
-  timeline: number;
-  team_size: number;
+// Enhanced Project interface that extends Order for backward compatibility
+export interface Project extends Omit<Order, 'status' | 'payment_status' | 'delivery_status'> {
+  // Keep legacy status for backward compatibility
   status: string;
-  created_at: string;
-  delivery_status?: string;
- 
   payment_status: string;
+  delivery_status?: string;
+  
+  // Add enhanced status fields
+  order_status?: OrderStatus;
+  enhanced_payment_status?: PaymentStatus;
+  enhanced_delivery_status?: DeliveryStatus;
 }
+
+// Re-export enhanced types for new features
+export type { Order, OrderStatus, PaymentStatus, DeliveryStatus } from './database';
 
 export interface FormData {
   title: string;

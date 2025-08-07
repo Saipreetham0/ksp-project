@@ -33,16 +33,52 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error
   } = await supabase.auth.getUser()
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // If there's an auth error, don't redirect - let the page handle it
+  if (error) {
+    console.log('Auth middleware error:', error.message)
+    return supabaseResponse
+  }
+
+  // Protected routes that require authentication
+  const protectedPaths = ['/dashboard', '/admin', '/user-panel', '/private', '/adminpanel']
+  const isProtectedRoute = protectedPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  // Public routes that don't require authentication
+  const publicPaths = ['/', '/login', '/auth', '/api', '/_next', '/favicon.ico', '/favicon.png']
+  const isPublicRoute = publicPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  // Skip static files and images
+  if (request.nextUrl.pathname.includes('.') && 
+      (request.nextUrl.pathname.endsWith('.js') || 
+       request.nextUrl.pathname.endsWith('.css') ||
+       request.nextUrl.pathname.endsWith('.png') ||
+       request.nextUrl.pathname.endsWith('.jpg') ||
+       request.nextUrl.pathname.endsWith('.ico'))) {
+    return supabaseResponse
+  }
+
+  // Only redirect to login if:
+  // 1. User is not authenticated
+  // 2. They're trying to access a protected route
+  // 3. They're not already on a public route
+  // 4. No auth error occurred
+  if (!user && isProtectedRoute && !isPublicRoute && !error) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from login page
+  if (user && request.nextUrl.pathname === '/login') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 

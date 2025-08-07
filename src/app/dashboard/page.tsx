@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 
 export const metadata: Metadata = {
-  title: "Dashboard - StudentHub",
-  description: "Student project management dashboard",
+  title: "Dashboard - ProjectX",
+  description: "Project management dashboard",
 };
 
 export default function DashboardPage() {

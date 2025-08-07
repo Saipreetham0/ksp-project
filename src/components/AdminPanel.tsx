@@ -1,8 +1,10 @@
 // src/components/AdminPanel.tsx
+// Firebase imports removed - replaced with Supabase
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// import { collection, getDocs } from 'firebase/firestore';
+// import { db } from '@/lib/firebase';
+import { createClient } from '@/utils/supabase/client';
 import { UserData } from '@/types/auth';
 import { ROLES } from '@/lib/roles';
 import Image from 'next/image';
@@ -16,10 +18,25 @@ export function AdminPanel() {
   useEffect(() => {
     const fetchUsers = async () => {
       if (hasPermission('read:users')) {
-        const usersRef = collection(db, 'users');
-        const snapshot = await getDocs(usersRef);
-        const usersData = snapshot.docs.map(doc => doc.data() as UserData);
-        setUsers(usersData);
+        const supabase = createClient();
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('*');
+
+        if (error) {
+          console.error('Error fetching users:', error);
+        } else {
+          const usersData: UserData[] = profiles.map((profile: any) => ({
+            uid: profile.id,
+            email: profile.email,
+            displayName: profile.display_name,
+            photoURL: profile.avatar_url,
+            role: profile.role,
+            createdAt: profile.created_at,
+            lastLogin: profile.last_sign_in_at || profile.created_at,
+          }));
+          setUsers(usersData);
+        }
       }
       setLoading(false);
     };

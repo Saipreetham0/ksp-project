@@ -1,14 +1,17 @@
 // src/hooks/useAuth.ts
+// Firebase imports removed - replaced with Supabase
 import { useState, useEffect } from "react";
-import {
-  User,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-} from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+// import {
+//   User,
+//   onAuthStateChanged,
+//   GoogleAuthProvider,
+//   signInWithPopup,
+//   signOut as firebaseSignOut,
+// } from "firebase/auth";
+// import { auth, db } from "@/lib/firebase";
+// import { doc, getDoc, setDoc } from "firebase/firestore";
+import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import { useRouter } from "next/navigation";
 import { UserData } from "@/types/auth";
 import { ROLE_PERMISSIONS } from "@/lib/roles";
@@ -19,48 +22,102 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (user) => {
-        setUser(user);
-        if (user) {
-          // Fetch user data including role
-          const userRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userRef);
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setUser(session.user);
+        
+        // Fetch user profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
 
-          if (userDoc.exists()) {
-            setUserData(userDoc.data() as UserData);
+        if (profile) {
+          const userProfileData: UserData = {
+            uid: profile.id,
+            email: profile.email,
+            role: profile.role || "user",
+            displayName: profile.display_name,
+            photoURL: profile.avatar_url,
+            createdAt: profile.created_at,
+            lastLogin: profile.last_sign_in_at || profile.created_at,
+          };
+          setUserData(userProfileData);
+        } else {
+          // Create new user profile with default role
+          const newUserData = {
+            id: session.user.id,
+            email: session.user.email!,
+            role: "user",
+            display_name: session.user.user_metadata?.full_name || null,
+            avatar_url: session.user.user_metadata?.avatar_url || null,
+            created_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+          };
+          
+          await supabase.from('profiles').insert([newUserData]);
+          
+          const userProfileData: UserData = {
+            uid: session.user.id,
+            email: session.user.email!,
+            role: "user",
+            displayName: session.user.user_metadata?.full_name,
+            photoURL: session.user.user_metadata?.avatar_url,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+          };
+          setUserData(userProfileData);
+        }
+      } else {
+        setUser(null);
+        setUserData(null);
+      }
+      setLoading(false);
+    };
 
-          } else {
-            // Create new user document with default role
-            const newUserData: UserData = {
-              uid: user.uid,
-              email: user.email!,
-              role: "user",
-              displayName: user.displayName || undefined,
-              photoURL: user.photoURL || undefined,
-              createdAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
+    getInitialSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch updated profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            const userProfileData: UserData = {
+              uid: profile.id,
+              email: profile.email,
+              role: profile.role || "user",
+              displayName: profile.display_name,
+              photoURL: profile.avatar_url,
+              createdAt: profile.created_at,
+              lastLogin: profile.last_sign_in_at || profile.created_at,
             };
-            await setDoc(userRef, newUserData);
-            setUserData(newUserData);
+            setUserData(userProfileData);
           }
         } else {
           setUserData(null);
         }
         setLoading(false);
-      },
-      (error) => {
-        console.error("Auth state change error:", error);
-        setError(error.message);
-        setLoading(false);
       }
     );
 
-    return () => unsubscribe();
-  }, []);
+    return () => subscription?.unsubscribe();
+  }, [supabase.auth]);
 
   const hasPermission = (permission: string): boolean => {
     return userData
@@ -73,17 +130,16 @@ export function useAuth() {
     setError(null);
 
     try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: "select_account",
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
       });
-
-      const result = await signInWithPopup(auth, provider);
-      router.push("/dashboard");
-      return result.user;
+      
+      if (error) throw error;
     } catch (error) {
       console.error("Google sign-in error:", error);
-      // setError(error.message);
       throw error;
     } finally {
       setLoading(false);
@@ -92,11 +148,10 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      await firebaseSignOut(auth);
+      await supabase.auth.signOut();
       router.push("/");
     } catch (error) {
       console.error("Sign out error:", error);
-      // setError(error.message);
       throw error;
     }
   };

@@ -1,9 +1,11 @@
 // app/components/Dashboard.tsx
-// "use client";
-// import React from 'react';
+"use client";
+import React from 'react';
+// Firebase imports removed - replaced with Supabase
 import { useAuth } from '@/app/context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+// import { signOut } from 'firebase/auth';
+// import { auth } from '@/lib/firebase';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
@@ -12,7 +14,8 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      const supabase = createClient();
+      await supabase.auth.signOut();
       router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -33,7 +36,7 @@ export default function Dashboard() {
                   className="w-8 h-8 rounded-full"
                 />
               )} */}
-              <span className="text-gray-700">{user?.displayName}</span>
+              <span className="text-gray-700">{user?.user_metadata?.full_name || user?.email}</span>
               <button
                 onClick={handleSignOut}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"

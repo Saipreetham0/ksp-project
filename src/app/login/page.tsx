@@ -47,23 +47,84 @@
 
 'use client'
 
-import SignIn from "@/components/sign-in"
-
-// import AuthForm from '@/components/auth/AuthForm'
-
-import GoogleSignin from "./GoogleSignin";
-
+import ProfessionalAuthForm from '@/components/auth/ProfessionalAuthForm'
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="p-8 bg-white rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Welcome Back</h1>
-        {/* <AuthForm /> */}
-
-        <GoogleSignin/>
-
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        {/* Floating Shapes */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-32 h-32 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+        
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-white/30">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.1) 1px, transparent 0)`,
+            backgroundSize: '24px 24px'
+          }}></div>
+        </div>
       </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Logo/Brand Section */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg mb-6">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-xl">P</span>
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+              ProjectX
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Professional Project Management
+            </p>
+          </div>
+
+          <ProfessionalAuthForm redirectTo="/dashboard" />
+
+          {/* Footer */}
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-500">
+              Need help?{' '}
+              <a href="mailto:support@projectx.com" className="text-blue-600 hover:text-blue-700 font-medium">
+                Contact Support
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   )
 }

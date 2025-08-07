@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, collection, query, getDocs, updateDoc, orderBy, limit, startAfter, where, QueryDocumentSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// Firebase imports removed - replaced with Supabase
+// import { doc, collection, query, getDocs, updateDoc, orderBy, limit, startAfter, where, QueryDocumentSnapshot } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,8 +48,7 @@ export default function AdminUserList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
-  const [lastVisible, setLastVisible] =  useState<QueryDocumentSnapshot | null>(null);
-//   useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isFirstPage, setIsFirstPage] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -58,49 +59,46 @@ export default function AdminUserList() {
 const fetchUsers = async (
     searchQuery = "",
     role = "ALL",
-    startAfterDoc: QueryDocumentSnapshot | null = null
+    page = 1
   ) => {
     setLoading(true);
     try {
-      let userQuery = query(
-        collection(db, "users"),
-        orderBy("createdAt", "desc"),
-        limit(USERS_PER_PAGE)
-      );
+      const from = (page - 1) * USERS_PER_PAGE;
+      const to = from + USERS_PER_PAGE - 1;
+
+      let query = supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (searchQuery) {
-        userQuery = query(
-          collection(db, "users"),
-          where("displayName", ">=", searchQuery),
-          where("displayName", "<=", searchQuery + "\uf8ff"),
-          limit(USERS_PER_PAGE)
-        );
+        query = query.ilike('display_name', `%${searchQuery}%`);
       }
 
       if (role !== "ALL") {
-        userQuery = query(userQuery, where("role", "==", role));
+        query = query.eq('role', role);
       }
 
-      if (startAfterDoc) {
-        userQuery = query(userQuery, startAfter(startAfterDoc));
-      }
+      const { data, error } = await query;
 
-      const querySnapshot = await getDocs(userQuery);
+      if (error) throw error;
 
-      const userData: User[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as User;
-        userData.push({
-          ...data,
-          uid: doc.id,
-          createdAt: data.createdAt || new Date().toISOString(),
-          lastLogin: data.lastLogin || new Date().toISOString(),
-        });
-      });
+      const userData: User[] = (data || []).map((profile: any) => ({
+        uid: profile.id,
+        email: profile.email,
+        displayName: profile.display_name,
+        photoURL: profile.avatar_url,
+        role: profile.role,
+        createdAt: profile.created_at,
+        lastLogin: profile.last_sign_in_at || profile.created_at,
+        isPhoneVerified: profile.phone_verified || false,
+        phoneNumber: profile.phone_number,
+      }));
 
       setUsers(userData);
-      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-      setIsFirstPage(startAfterDoc === null);
+      setCurrentPage(page);
+      setIsFirstPage(page === 1);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -109,15 +107,19 @@ const fetchUsers = async (
   };
 
   useEffect(() => {
-    fetchUsers(searchTerm, roleFilter);
+    fetchUsers(searchTerm, roleFilter, 1);
+    setCurrentPage(1);
   }, [searchTerm, roleFilter]);
 
   const handleUpdateRole = async (uid: string, newRole: string) => {
     setUpdating(uid);
     try {
-      await updateDoc(doc(db, "users", uid), {
-        role: newRole,
-      });
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', uid);
+
+      if (error) throw error;
 
       setUsers(users.map(user =>
         user.uid === uid ? { ...user, role: newRole } : user
@@ -130,14 +132,13 @@ const fetchUsers = async (
   };
 
   const handleNextPage = () => {
-    if (lastVisible) {
-      fetchUsers(searchTerm, roleFilter, lastVisible);
-    }
+    const nextPage = currentPage + 1;
+    fetchUsers(searchTerm, roleFilter, nextPage);
   };
 
   const handlePreviousPage = () => {
-    // For simplicity, just return to first page
-    fetchUsers(searchTerm, roleFilter);
+    const prevPage = Math.max(1, currentPage - 1);
+    fetchUsers(searchTerm, roleFilter, prevPage);
   };
 
   return (
@@ -277,7 +278,7 @@ const fetchUsers = async (
                   variant="outline"
                   size="sm"
                   onClick={handleNextPage}
-                  disabled={!lastVisible}
+                  disabled={users.length < USERS_PER_PAGE}
                 >
                   Next
                   <ChevronRight className="h-4 w-4 ml-1" />

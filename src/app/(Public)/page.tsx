@@ -612,28 +612,33 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-[#1C61E7] text-white">
+      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">
             Ready to Start Your Project?
           </h2>
           <p className="text-lg mb-8">
-            Get in touch with us to discuss your project requirements and
-            academic needs
+            Join ProjectX and manage your projects with our all-in-one platform
           </p>
-          {/* <Button className="bg-white text-[#1C61E7] hover:bg-gray-100">
-            Schedule Free Consultation
-          </Button> */}
-
-          <a
-            href="https://calendly.com/saipreetham0/30min"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button className="bg-white text-[#1C61E7] hover:bg-gray-100">
-              Schedule Free Consultation
-            </Button>
-          </a>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="/login">
+              <Button className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 text-lg font-semibold">
+                Sign In to Dashboard
+              </Button>
+            </a>
+            <a
+              href="https://calendly.com/saipreetham0/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button 
+                variant="outline" 
+                className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 text-lg font-semibold"
+              >
+                Schedule Consultation
+              </Button>
+            </a>
+          </div>
         </div>
       </section>
     </div>

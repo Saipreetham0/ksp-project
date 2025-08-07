@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+// Firebase imports removed - replaced with Supabase authentication
+// import { onAuthStateChanged } from "firebase/auth";
+// import { auth } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -90,15 +91,17 @@ const ProjectsPage = () => {
   }, [userId, searchQuery, selectedType, selectedStatus, currentPage]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    // Firebase auth replaced with Supabase - check if user is logged in
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserId(user.uid);
+        setUserId(user.id);
       } else {
         router.push("/login");
       }
-    });
+    };
 
-    return () => unsubscribe();
+    checkAuth();
   }, [router]);
 
   useEffect(() => {

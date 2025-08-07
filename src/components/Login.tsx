@@ -1,8 +1,10 @@
 // app/components/Login.tsx
-// "use client";
+"use client";
 import React, { useState } from "react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+// Firebase imports removed - replaced with Supabase
+// import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+// import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -13,9 +15,14 @@ export default function Login() {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push("/dashboard");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      
+      if (error) throw error;
     } catch (error) {
       console.error("Error signing in with Google:", error);
     } finally {

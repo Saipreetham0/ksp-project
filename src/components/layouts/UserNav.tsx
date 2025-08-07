@@ -199,41 +199,28 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { User, Settings, CreditCard, LogOut } from "lucide-react";
 import Image from "next/image";
-// import { supabase } from "@/utils/supabase";
-import { supabase } from "@/lib/supabase";
-
 import { useRouter } from "next/navigation";
+import { useAuthSession } from "@/hooks/useAuthSession";
 
 export function UserNav() {
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const { user, session, loading, signOut } = useAuthSession();
 
-  // Fetch the authenticated user's data
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: user, error } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        console.log(user);
-      } else {
-        // router.push("/login"); // Redirect to login if not authenticated
-      }
-      if (error) {
-        console.error("Error fetching user:", error);
-        // router.push("/login"); // Redirect to login if not authenticated
-        // return null;
-      }
-    };
+  // Don't render if no session
+  if (loading) {
+    return (
+      <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
+    );
+  }
 
-    fetchUser();
-  }, [router]);
+  if (!session || !user) {
+    return null;
+  }
 
   // Handle sign out
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    await supabase.auth.signOut({ scope: "local" });
-
+    await signOut();
     router.push("/login"); // Redirect to login page
   };
 
@@ -246,9 +233,9 @@ export function UserNav() {
         <Image
           src={user?.user_metadata?.avatar_url || "/default-avatar.png"}
           alt="User"
-          className="h-8 w-8 rounded-full"
-          width={20}
-          height={20}
+          className="h-8 w-8 rounded-full object-cover"
+          width={32}
+          height={32}
         />
       </button>
 

@@ -31,8 +31,10 @@ import { Label } from "@/components/ui/label";
 //   AlertDialogTitle,
 //   AlertDialogTrigger,
 // } from "@/components/ui/alert-dialog";
-import { auth, db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+// Firebase imports removed - replaced with Supabase
+// import { auth, db } from "@/lib/firebase";
+// import { doc, updateDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabase";
 import { Loader2,  Bell,
     // Mail, Shield, Trash2
 } from "lucide-react";
@@ -67,21 +69,27 @@ export default function SettingsPage({ initialSettings }: SettingsProps) {
   });
   const { toast } = useToast();
   const handleSaveSettings = async () => {
-    if (!auth.currentUser) return;
+    // Get current user from Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
     setSaving(true);
     try {
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        // settings: settings,
-      });
+      // Update settings in Supabase profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          settings: settings,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
       toast({
         title: "Settings saved successfully",
-        // description: "There was a problem with your request.",
       });
     } catch (error) {
       console.error("Error saving settings:", error);
-      //   toast.error("Failed to save settings");
-
       toast({
         variant: "destructive",
         title: "Failed to save settings",

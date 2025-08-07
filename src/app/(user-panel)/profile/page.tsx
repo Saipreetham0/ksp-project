@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+// Firebase imports removed - replaced with Supabase
+// import { auth, db } from "@/lib/firebase";
+// import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -33,21 +35,27 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       if (user) {
         try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          const userData = userDoc.data();
+          // Fetch user profile from Supabase
+          const { data: userData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
           const profileData = {
-            uid: user.uid,
+            uid: user.id,
             email: user.email || "",
-            displayName: user.displayName || "User",
-            photoURL: user.photoURL || "/default-avatar.png",
-            createdAt: userData?.createdAt || user.metadata.creationTime,
-            lastLogin: userData?.lastLogin || user.metadata.lastSignInTime,
-            phoneNumber: user.phoneNumber || userData?.phoneNumber,
-            isPhoneVerified: user.phoneNumber ? true : false,
+            displayName: userData?.display_name || user.user_metadata?.full_name || "User",
+            photoURL: userData?.avatar_url || user.user_metadata?.avatar_url || "/default-avatar.png",
+            createdAt: user.created_at,
+            lastLogin: user.last_sign_in_at,
+            phoneNumber: userData?.phone_number || user.phone,
+            isPhoneVerified: userData?.phone_verified || false,
             role: userData?.role || "USER",
           };
 
@@ -60,9 +68,9 @@ export default function ProfilePage() {
       } else {
         router.push("/login");
       }
-    });
+    };
 
-    return () => unsubscribe();
+    checkAuth();
   }, [router]);
 
   const handleUpdatePhone = async () => {
@@ -70,10 +78,16 @@ export default function ProfilePage() {
 
     setUpdating(true);
     try {
-      await updateDoc(doc(db, "users", profile.uid), {
-        phoneNumber: phoneNumber,
-        isPhoneVerified: false,
-      });
+      // Update phone number in Supabase profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          phone_number: phoneNumber,
+          phone_verified: false,
+        })
+        .eq('id', profile.uid);
+
+      if (error) throw error;
 
       setProfile((prev) =>
         prev

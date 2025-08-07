@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+// Firebase imports removed - replaced with Supabase authentication
 // import { onAuthStateChanged } from "firebase/auth";
 // import { auth } from "@/lib/firebase";
 import {
@@ -31,12 +32,38 @@ import {
   CheckCircle,
   XCircle,
   Clock3,
+  IndianRupee,
 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
-import { Project, FormData } from "@/types/project";
+// Updated to use Order instead of Project
+interface Order {
+  id: number;
+  user_id: string;
+  title: string;
+  description: string;
+  type: string;
+  technology: string;
+  timeline: number;
+  team_size: number;
+  amount?: number;
+  status: string;
+  payment_status?: string;
+  delivery_status?: string;
+  created_at: string;
+  updated_at: string;
+}
 
+interface FormData {
+  title: string;
+  description: string;
+  type: string;
+  technology: string;
+  timeline: string;
+  team_size: string;
+  status: string;
+}
 import { useRouter } from "next/navigation";
+import { useAuthSession } from "@/hooks/useAuthSession";
 
 
 // Constants
@@ -57,18 +84,23 @@ const TECHNOLOGIES = [
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "completed":
-      return "secondary"; // Changed from 'success'
+      return "secondary";
+    case "processing":
+    case "shipped":
+    case "delivered":
+      return "default";
     case "pending":
-      return "default"; // Changed from 'warning'
+    case "draft":
+      return "default";
     case "rejected":
+    case "cancelled":
       return "destructive";
     default:
       return "default";
   }
 };
 
-// const ProjectCard = ({ project }: { project: Project }) => (
-const ProjectCard = ({ project }: { project: Project }) => {
+const OrderCard = ({ order }: { order: Order }) => {
   const router = useRouter();
   // const router = useRouter();
   return (
@@ -76,46 +108,52 @@ const ProjectCard = ({ project }: { project: Project }) => {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">
-            {project.title}
+            {order.title}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {project.status === "completed" && (
+            {order.status === "completed" && (
               <CheckCircle className="h-4 w-4 text-green-500" />
             )}
-            {project.status === "pending" && (
+            {(order.status === "pending" || order.status === "draft") && (
               <Clock3 className="h-4 w-4 text-yellow-500" />
             )}
-            {project.status === "rejected" && (
+            {(order.status === "rejected" || order.status === "cancelled") && (
               <XCircle className="h-4 w-4 text-red-500" />
             )}
-            <Badge variant={getStatusBadgeVariant(project.status)}>
-              {project.status}
+            <Badge variant={getStatusBadgeVariant(order.status)}>
+              {order.status}
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">{project.description}</p>
+          <p className="text-sm text-gray-600">{order.description}</p>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Laptop className="h-4 w-4" />
-              <span>{project.technology}</span>
+              <span>{order.technology}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Users className="h-4 w-4" />
-              <span>{project.team_size} members</span>
+              <span>{order.team_size} members</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar className="h-4 w-4" />
-              <span>{project.timeline} weeks</span>
+              <span>{order.timeline} days</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Clock className="h-4 w-4" />
-              <span>{new Date(project.created_at).toLocaleDateString()}</span>
+              <span>{new Date(order.created_at).toLocaleDateString()}</span>
             </div>
           </div>
+          {order.amount && (
+            <div className="flex items-center gap-2 text-sm text-gray-700 font-semibold">
+              <IndianRupee className="h-4 w-4" />
+              <span>₹{order.amount.toLocaleString()}</span>
+            </div>
+          )}
         </div>
       </CardContent>
       {/* <CardFooter className="bg-gray-50">
@@ -132,12 +170,12 @@ const ProjectCard = ({ project }: { project: Project }) => {
       <CardFooter className="bg-gray-50">
         <div className="flex items-center justify-between w-full">
           <Badge variant="outline" className="capitalize">
-            {project.type} Project
+            {order.type} Order
           </Badge>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/projects/${project.id}`)}
+            onClick={() => router.push(`/orders/${order.id}`)}
           >
             View Details
           </Button>
@@ -149,10 +187,10 @@ const ProjectCard = ({ project }: { project: Project }) => {
 };
 
 export function DashboardOverview() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
+  const { user, session, loading: authLoading, supabase } = useAuthSession();
   const [formData, setFormData] = useState<FormData>({
     title: "",
     description: "",
@@ -165,49 +203,45 @@ export function DashboardOverview() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Handle authentication state
   useEffect(() => {
-    // const unsubscribe = onAuthStateChanged(auth, (user) => {
-    //   if (user) {
-    //     setUserId(user.uid);
-    //   } else {
-    //     router.push("/login"); // Redirect to login if not authenticated
-    //   }
-    // });
+    if (!authLoading && !session) {
+      // Only redirect if we're not loading and there's definitely no session
+      router.push("/login");
+    }
+  }, [authLoading, session, router]);
 
-    // return () => unsubscribe();
-  }, [router]);
-
-  // Fetch projects for the current user
+  // Fetch orders for the current user
   useEffect(() => {
-    if (userId) {
-      fetchProjects();
+    if (user?.id) {
+      fetchOrders();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [user?.id]);
 
-  const fetchProjects = async () => {
-    if (!userId) return;
+  const fetchOrders = async () => {
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
-        .from("projects")
+        .from("orders")
         .select("*")
-        .eq("user_id", userId) // Filter projects by user_id
+        .eq("user_id", user.id) // Filter orders by user_id
         .order("created_at", { ascending: false })
         .limit(5);
 
       if (error) throw error;
-      setProjects(data || []);
+      setOrders(data || []);
     } catch (err) {
-      console.error("Error fetching projects:", err);
-      setError("Failed to load projects");
+      console.error("Error fetching orders:", err);
+      setError("Failed to load orders");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) {
-      setError("You must be logged in to submit a project");
+    if (!user?.id) {
+      setError("You must be logged in to submit an order");
       return;
     }
 
@@ -225,13 +259,17 @@ export function DashboardOverview() {
     }
 
     try {
-      const { error } = await supabase.from("projects").insert([
+      const { error } = await supabase.from("orders").insert([
         {
           ...formData,
           timeline,
           team_size,
-          user_id: userId, // Add user_id to the project
+          user_id: user.id, // Add user_id to the order
+          status: formData.status === "pending" ? "draft" : formData.status, // Map pending to draft for orders
+          payment_status: "pending",
+          delivery_status: "pending",
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       ]);
 
@@ -247,10 +285,10 @@ export function DashboardOverview() {
         team_size: "",
         status: "pending",
       });
-      fetchProjects();
+      fetchOrders();
     } catch (err) {
-      console.error("Error submitting project:", err);
-      setError("Failed to submit project");
+      console.error("Error submitting order:", err);
+      setError("Failed to submit order");
     } finally {
       setLoading(false);
     }
@@ -258,18 +296,35 @@ export function DashboardOverview() {
 
 
 
+  // Show loading state while authentication is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if there's no session (will redirect)
+  if (!session || !user) {
+    return null;
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="grid gap-6 md:grid-cols-2">
         {/* Project Submission Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Submit New Project</CardTitle>
+            <CardTitle>Submit New Order</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Project Title</Label>
+                <Label htmlFor="title">Order Title</Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -281,7 +336,7 @@ export function DashboardOverview() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Project Description</Label>
+                <Label htmlFor="description">Order Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -294,7 +349,7 @@ export function DashboardOverview() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">Project Type</Label>
+                  <Label htmlFor="type">Order Type</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) =>
@@ -336,7 +391,7 @@ export function DashboardOverview() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="timeline">Timeline (weeks)</Label>
+                  <Label htmlFor="timeline">Timeline (days)</Label>
                   <Input
                     id="timeline"
                     type="number"
@@ -368,29 +423,29 @@ export function DashboardOverview() {
 
               {success && (
                 <div className="text-sm text-green-500">
-                  Project submitted successfully!
+                  Order submitted successfully!
                 </div>
               )}
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Submitting..." : "Submit Project"}
+                {loading ? "Submitting..." : "Submit Order"}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Recent Projects List */}
+        {/* Recent Orders List */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Submissions</CardTitle>
+            <CardTitle>Recent Orders</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+            {orders.map((order) => (
+              <OrderCard key={order.id} order={order} />
             ))}
-            {projects.length === 0 && (
+            {orders.length === 0 && (
               <p className="text-center text-gray-500">
-                No projects submitted yet
+                No orders submitted yet
               </p>
             )}
           </CardContent>

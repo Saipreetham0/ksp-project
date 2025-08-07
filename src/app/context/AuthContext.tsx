@@ -2,11 +2,14 @@
 
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+// Firebase imports removed - replaced with Supabase
+// import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+// import { auth } from "@/lib/firebase";
+import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: User | null;
   loading: boolean;
 }
 
@@ -16,17 +19,30 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
-  }, []);
+    getInitialSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [supabase.auth]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

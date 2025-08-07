@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// Firebase imports removed - replaced with Supabase
+// import { doc, getDoc, updateDoc } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { User } from "@/types/user";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,31 +73,41 @@ export default function UserDetailPage() {
       if (!params.id) return;
 
       try {
-        const userDoc = await getDoc(doc(db, "users", params.id as string));
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as User;
-          //   setUser({ ...userData, uid: userDoc.id });
-          //   form.reset({
-          //     displayName: userData.displayName,
-          //     email: userData.email,
-          //     phoneNumber: userData.phoneNumber,
-          //     role: userData.role,
-          //   });
+        // Fetch user from Supabase profiles table
+        const { data: userData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', params.id as string)
+          .single();
 
-          setUser({ ...userData, uid: userDoc.id });
-          form.reset({
-            displayName: userData.displayName,
+        if (error) throw error;
+
+        if (userData) {
+          const userProfile: User = {
+            uid: userData.id,
+            displayName: userData.display_name,
             email: userData.email,
-            phoneNumber: userData.phoneNumber,
-            role: userData.role as "admin" | "MODERATOR" | "user",
+            phoneNumber: userData.phone_number,
+            role: userData.role,
+            photoURL: userData.avatar_url,
+            createdAt: userData.created_at,
+            lastLogin: userData.last_sign_in_at || userData.created_at,
+            isPhoneVerified: userData.phone_verified || false,
+          };
+
+          setUser(userProfile);
+          form.reset({
+            displayName: userProfile.displayName,
+            email: userProfile.email,
+            phoneNumber: userProfile.phoneNumber,
+            role: userProfile.role as "admin" | "MODERATOR" | "user",
           });
         }
       } catch (error) {
         console.error("Error fetching user:", error);
-        // toast.error("Failed to load user details");
         toast({
-          title: "Scheduled: Catch up",
-          // description: "Friday, February 10, 2023 at 5:57 PM",
+          title: "Failed to load user details",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -103,26 +115,35 @@ export default function UserDetailPage() {
     };
 
     fetchUser();
-  }, [params.id, form]);
+  }, [params.id, form, toast]);
 
   const onSubmit = async (values: z.infer<typeof userSchema>) => {
     if (!user?.uid) return;
 
     setUpdating(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), values);
+      // Update user in Supabase profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: values.displayName,
+          email: values.email,
+          phone_number: values.phoneNumber,
+          role: values.role,
+        })
+        .eq('id', user.uid);
+
+      if (error) throw error;
+
       setUser((prev) => (prev ? { ...prev, ...values } : null));
       toast({
         title: "User details updated successfully",
-        // description: "Friday, February 10, 2023 at 5:57 PM",
       });
-    //   toast.success("User details updated successfully");
     } catch (error) {
       console.error("Error updating user:", error);
-    //   toast.error("Failed to update user details");
       toast({
         title: "Failed to update user details",
-        // description: "Friday, February 10, 2023 at 5:57 PM",
+        variant: "destructive",
       });
     } finally {
       setUpdating(false);
