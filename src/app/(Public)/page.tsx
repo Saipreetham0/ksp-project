@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, type JSX } from "react";
 import { Button } from "@/components/ui/button";
 // import Image from "next/image";
 
 // import { AuthButton } from '@/components/AuthButton';
-import { redirect } from 'next/navigation';
+// import { redirect } from 'next/navigation';
 import {
   Card,
   CardHeader,
@@ -40,7 +40,9 @@ import {
   Rocket,
 } from "lucide-react";
 import { HeroSection } from "@/components/HeroSection";
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
+// import { fetchFeaturedProducts } from "@/lib/woocommerce";
+
 
 const ProcessExplanation = () => {
   const steps = [
@@ -308,22 +310,24 @@ const SearchProjects = () => {
   );
 };
 
+// const LandingPage = async () => {
 const LandingPage = () => {
 
+  // const featuredProducts = await fetchFeaturedProducts();
 
-  const { user, loading } = useAuth();
+  // const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="w-8 h-8 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin" />
+  //     </div>
+  //   );
+  // }
 
-  if (user) {
-    redirect('/dashboard');
-  }
+  // if (user) {
+  //   redirect('/dashboard');
+  // }
 
   const features = [
     {
@@ -589,6 +593,8 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+
 
       <Testimonials />
 

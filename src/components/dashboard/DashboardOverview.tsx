@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+// import { onAuthStateChanged } from "firebase/auth";
+// import { auth } from "@/lib/firebase";
 import {
   Card,
   CardContent,
@@ -166,15 +166,15 @@ export function DashboardOverview() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        router.push("/login"); // Redirect to login if not authenticated
-      }
-    });
+    // const unsubscribe = onAuthStateChanged(auth, (user) => {
+    //   if (user) {
+    //     setUserId(user.uid);
+    //   } else {
+    //     router.push("/login"); // Redirect to login if not authenticated
+    //   }
+    // });
 
-    return () => unsubscribe();
+    // return () => unsubscribe();
   }, [router]);
 
   // Fetch projects for the current user

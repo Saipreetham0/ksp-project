@@ -31,3 +31,9 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
 }
+
+
+export type AuthError = {
+  message: string;
+  status: number;
+};

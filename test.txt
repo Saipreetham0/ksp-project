@@ -1,0 +1,107 @@
+
+# Project Requirements Document (PRD)
+## Title: Project Order & Management Automation Platform
+
+**Created on:** 2025-08-07
+
+---
+
+## 1. Overview
+
+This platform will automate and scale the student project order process (IoT, ML, etc.) currently handled via WhatsApp, phone calls, and manual tools. It will integrate order intake, team coordination, delivery, documentation, and payment using Supabase, Next.js, and external tools (Zoho Invoice, Shiprocket, Zoom, etc.).
+
+---
+
+## 2. Features
+
+### 2.1. Student Portal (Frontend)
+- Student Registration/Login (via OTP or, Magic Link , Google Sign In)
+- Project Order Form (Name, College, Branch, Type: Mini/Major, IoT/ML, Description, Deadline, Hardware Needed)
+- Payment via Razorpay/Zoho Payments
+- Track Order Status (Processing, In Progress, Shipped, Delivered)
+- Downloadable Documents (PPT, Report, Source Code, Google Docs link)
+- Chat/Group creation via WhatsApp API (redirect)
+- Google Meet/Zoom integration for demo scheduling
+
+### 2.2. Admin/Team Dashboard
+- Order Management Table (Filter by status, type, etc.)
+- Assign team via Asana API (auto task creation)
+- Generate Invoices via Zoho Invoice API
+- Generate Google Meet/Zoom link for each order
+- Upload Documents (Report, Code, Video)
+- Track Delivery via Shiprocket/BlueDart API
+- Payment tracking and reconciliation (Zoho/Razorpay)
+
+### 2.3. Backend (Supabase)
+- Tables: Users, Orders, Projects, Payments, Teams, Delivery, Documents
+- Real-time updates for team assignment, document uploads, payment status
+- Access Control: Admin, Manager, Developer, Student
+
+---
+
+## 3. Tools & Integrations
+
+- **Supabase** – Auth, Database, Storage, Functions
+- **Next.js** – Frontend and API routes
+- **Zoho Invoice API** – Auto-generate and email invoices
+- **Razorpay/Zoho Payments** – Payment handling
+- **Shiprocket/BlueDart API** – Delivery updates
+- **Asana API** – Task & team management
+- **Google Meet/Zoom** – For live demos (generate links)
+- **Google Docs/Drive API** – Store/share documents
+
+---
+
+## 4. Automation Flow
+
+1. Student submits order.
+2. Invoice is auto-generated (Zoho Invoice) and payment link shared.
+3. Upon payment, WhatsApp group link & Meet/Zoom invite created.
+4. Team tasks auto-created in Asana.
+5. Admin uploads documentation.
+6. Hardware shipped using Shiprocket or BlueDart API.
+7. Final status updated and project marked as delivered.
+
+---
+
+## 5. Scalability Plan
+
+- Microservices for invoicing, team assignment, shipping
+- Serverless functions in Supabase
+- Modular DB schema for future services (internships, course sales)
+
+---
+
+## 6. Roles & Permissions
+
+- **Admin:** Full access to dashboard and APIs
+- **Team Member:** Assigned task/project view only
+- **Student:** Project status, documents, chat
+- **Delivery:** Track order only
+
+---
+
+## 7. Future Features
+
+- AI Chatbot for student query handling
+- PDF generator for reports/invoices
+- WhatsApp bot integration for status tracking
+- Internship module (student onboarding and task tracking)
+
+---
+
+## 8. Timeline
+
+- Week 1: Database Schema, Supabase Setup, Auth
+- Week 2: Student Portal UI and Order System
+- Week 3: Admin Panel + Zoho & Asana Integration
+- Week 4: Shipping & Documentation Uploads
+- Week 5: Testing, Deployment, Feedback Iterations
+
+---
+
+## 9. Tech Stack
+
+- Frontend: Next.js, Tailwind CSS
+- Backend: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- Integrations: Zoho Invoice, Razorpay, Asana, Shiprocket, Zoom API, WhatsApp API

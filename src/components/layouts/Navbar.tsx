@@ -43,13 +43,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
       time: '5 minutes ago',
       isRead: false,
     },
-    // {
-    //   id: '3',
-    //   title: 'Security Update',
-    //   description: 'Important security update for your account',
-    //   time: '3 hours ago',
-    //   isRead: false,
-    // },
+
   ]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
