@@ -20,7 +20,7 @@ export interface Project {
   created_at: string;
   delivery_status?: string;
  
-  payment_status: String;
+  payment_status: string;
 }
 
 export interface FormData {
@@ -75,5 +75,5 @@ export interface PaymentTransaction {
 //   user_id: string;
 //   delivery_status?: String | null;
 //   amount: number;
-//   payment_status: String;
+//   payment_status: string;
 // }

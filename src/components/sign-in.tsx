@@ -1,15 +1,6 @@
 
-import { signIn } from "@/auth"
+import GoogleSignin from "@/app/login/GoogleSignin"
 
 export default function SignIn() {
-  return (
-    <form
-      action={async () => {
-        "use server"
-        await signIn("google")
-      }}
-    >
-      <button type="submit">Signin with Google</button>
-    </form>
-  )
+  return <GoogleSignin />
 } 
