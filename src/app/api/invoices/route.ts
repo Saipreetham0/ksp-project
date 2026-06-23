@@ -1,3 +1,4 @@
+import { getUserOr401 } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { CreateInvoiceRequest, Invoice } from '@/types/database';
@@ -6,11 +7,8 @@ import { zohoInvoice, mapZohoStatusToLocal } from '@/lib/zoho-invoice';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     // Get user profile to check permissions
     const { data: profile } = await supabase
@@ -95,11 +93,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     // Check permissions - only admin and finance can create invoices
     const { data: profile } = await supabase

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import {
   Bar,
@@ -38,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 // import { type ChartConfig } from "@/components/ui/chart"
 
 // const chartData = [
@@ -92,6 +93,7 @@ interface Project {
 }
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 export default function DashboardPage() {
+  const supabase = createClient();
   const [paymentTransactions, setPaymentTransactions] = useState<
     PaymentTransaction[]
   >([]);
@@ -103,13 +105,13 @@ export default function DashboardPage() {
     async function fetchData() {
       const { data: transactionsData, error: transactionsError } =
         await supabase
-          .from("payment_transactions")
+          .from("payments")
           .select("*")
           .order("created_at", { ascending: false })
           .limit(10);
 
       const { data: projectsData, error: projectsError } = await supabase
-        .from("projects")
+        .from("orders")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
@@ -204,7 +206,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₹{totalRevenue.toLocaleString("en-IN")}
+                  {formatCurrency(totalRevenue)}
                 </div>
                 {/* <p className="text-xs text-muted-foreground">
                   +20.1% from last month
@@ -337,7 +339,7 @@ export default function DashboardPage() {
                         {transaction.payment_id}
                       </TableCell>
                       <TableCell>
-                        ₹{transaction.amount.toLocaleString("en-IN")}
+                        {formatCurrency(transaction.amount)}
                       </TableCell>
                       <TableCell>{transaction.status}</TableCell>
                       <TableCell>
@@ -374,7 +376,7 @@ export default function DashboardPage() {
                       <TableCell>{project.type}</TableCell>
                       <TableCell>{project.status}</TableCell>
                       <TableCell>
-                        ₹{project.amount.toLocaleString("en-IN")}
+                        {formatCurrency(project.amount)}
                       </TableCell>
                     </TableRow>
                   ))}

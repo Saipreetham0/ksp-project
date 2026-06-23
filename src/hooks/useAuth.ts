@@ -16,9 +16,15 @@ import { useRouter } from "next/navigation";
 import { UserData } from "@/types/auth";
 import { ROLE_PERMISSIONS } from "@/lib/roles";
 
+// The legacy fields this hook actually populates from the profiles table.
+type AuthUserData = Pick<
+  UserData,
+  "uid" | "email" | "role" | "displayName" | "photoURL" | "createdAt" | "lastLogin"
+>;
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<AuthUserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -40,7 +46,7 @@ export function useAuth() {
           .single();
 
         if (profile) {
-          const userProfileData: UserData = {
+          const userProfileData: AuthUserData = {
             uid: profile.id,
             email: profile.email,
             role: profile.role || "user",
@@ -64,7 +70,7 @@ export function useAuth() {
           
           await supabase.from('profiles').insert([newUserData]);
           
-          const userProfileData: UserData = {
+          const userProfileData: AuthUserData = {
             uid: session.user.id,
             email: session.user.email!,
             role: "user",
@@ -98,7 +104,7 @@ export function useAuth() {
             .single();
 
           if (profile) {
-            const userProfileData: UserData = {
+            const userProfileData: AuthUserData = {
               uid: profile.id,
               email: profile.email,
               role: profile.role || "user",

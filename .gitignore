@@ -4,6 +4,9 @@
 /node_modules
 /.pnp
 .pnp.*
+
+# use pnpm-lock.yaml as the canonical lockfile
+package-lock.json
 .yarn/*
 !.yarn/patches
 !.yarn/plugins

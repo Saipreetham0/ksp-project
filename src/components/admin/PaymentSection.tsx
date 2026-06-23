@@ -1,4 +1,5 @@
 // PaymentSection.tsx
+import { formatCurrency } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -33,20 +34,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 interface PaymentTransaction {
   id: string;
   user_id: string;
-  project_id: string;
   order_id: string;
-  payment_id: string;
+  transaction_id: string;
   amount: number;
   status: string;
   created_at: string;
-  payment_method: string;
+  method: string;
   currency: string;
-  failure_reason: string | null;
+  failure_reason?: string | null;
 }
 
 interface PaymentSectionProps {
@@ -83,6 +83,7 @@ const AddPaymentDialog = ({
   onPaymentAdded: () => void;
   remainingAmount: number;
 }) => {
+  const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -98,17 +99,35 @@ const AddPaymentDialog = ({
     setIsSubmitting(true);
 
     try {
+      // Get the logged in admin user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Fetch the order to get the associated client's user_id
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .select("user_id")
+        .eq("id", projectId)
+        .single();
+      
+      if (orderError || !orderData) throw new Error("Order not found");
+
+      const dbMethod = formData.payment_method === "card" ? "credit_card" : formData.payment_method;
+
       const { error } = await supabase
-        .from("payment_transactions")
+        .from("payments")
         .insert([
           {
-            project_id: projectId,
+            order_id: parseInt(projectId),
+            user_id: orderData.user_id,
             amount: parseFloat(formData.amount),
-            payment_method: formData.payment_method,
+            method: dbMethod,
             currency: formData.currency,
-            order_id: formData.order_id,
-            payment_id: formData.payment_id,
+            reference_number: formData.order_id,
+            transaction_id: formData.payment_id,
             status: "completed",
+            recorded_by: user.id,
+            created_by: user.id
           },
         ]);
 
@@ -208,6 +227,7 @@ const AddPaymentDialog = ({
 
 // Main Payment Section Component
 export const PaymentSection = ({ projectId, totalAmount }: PaymentSectionProps) => {
+  const supabase = createClient();
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -217,9 +237,9 @@ export const PaymentSection = ({ projectId, totalAmount }: PaymentSectionProps) 
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("payment_transactions")
+        .from("payments")
         .select("*")
-        .eq("project_id", projectId)
+        .eq("order_id", projectId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -277,19 +297,19 @@ export const PaymentSection = ({ projectId, totalAmount }: PaymentSectionProps) 
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-600">Total Amount</p>
               <p className="text-2xl font-bold text-green-700">
-                ₹{totalAmount.toLocaleString()}
+                {formatCurrency(totalAmount)}
               </p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-600">Total Paid</p>
               <p className="text-2xl font-bold text-blue-700">
-                ₹{totalPaid.toLocaleString()}
+                {formatCurrency(totalPaid)}
               </p>
             </div>
             <div className="p-4 bg-orange-50 rounded-lg">
               <p className="text-sm text-orange-600">Remaining</p>
               <p className="text-2xl font-bold text-orange-700">
-                ₹{remainingAmount.toLocaleString()}
+                {formatCurrency(remainingAmount)}
               </p>
             </div>
           </div>
@@ -311,12 +331,12 @@ export const PaymentSection = ({ projectId, totalAmount }: PaymentSectionProps) 
                     <TableCell>
                       {new Date(payment.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
-                    <TableCell className="capitalize">{payment.payment_method}</TableCell>
+                    <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                    <TableCell className="capitalize">{payment.method}</TableCell>
                     <TableCell>
                       <PaymentStatusBadge status={payment.status} />
                     </TableCell>
-                    <TableCell>{payment.payment_id}</TableCell>
+                    <TableCell>{payment.transaction_id || "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

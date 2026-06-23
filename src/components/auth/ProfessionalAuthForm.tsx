@@ -1,36 +1,40 @@
 "use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from '@/hooks/use-toast';
-import { createClient } from '@/utils/supabase/client';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Mail,
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  Chrome,
-  Sparkles,
-  Zap,
-  Shield,
-  Lock,
-  ArrowRight
-} from 'lucide-react';
-import Image from 'next/image';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/hooks/use-toast";
+import { createClient } from "@/utils/supabase/client";
+import { getErrorMessage } from "@/lib/utils";
+import { Mail, Loader2, MailCheck, AlertCircle, ArrowLeft } from "lucide-react";
 
 const emailSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().email("Enter a valid email address"),
 });
-
 type EmailFormData = z.infer<typeof emailSchema>;
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+      <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
+    </svg>
+  );
+}
 
 interface ProfessionalAuthFormProps {
   onSuccess?: () => void;
@@ -38,302 +42,154 @@ interface ProfessionalAuthFormProps {
 }
 
 export default function ProfessionalAuthForm({
-  onSuccess,
-  redirectTo = '/dashboard'
+  redirectTo = "/dashboard",
 }: ProfessionalAuthFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [authMode, setAuthMode] = useState<'google' | 'magic'>('google');
+  const [isLoading, setIsLoading] = useState<"google" | "magic" | null>(null);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
-
   const form = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
-    defaultValues: {
-      email: '',
-    },
+    defaultValues: { email: "" },
   });
 
-  const handleMagicLinkSignIn = async (data: EmailFormData) => {
-    setIsLoading(true);
-    setError(null);
+  const callbackUrl = (origin: string) =>
+    `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
 
+  const handleMagicLink = async (data: EmailFormData) => {
+    setIsLoading("magic");
+    setError(null);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: data.email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
-        },
+        options: { emailRedirectTo: callbackUrl(window.location.origin) },
       });
-
       if (error) throw error;
-
       setMagicLinkSent(true);
-      toast({
-        title: 'Magic Link Sent! ✨',
-        description: `Check your email at ${data.email} for the sign-in link.`,
-      });
-    } catch (error: any) {
-      setError(error.message || 'Failed to send magic link');
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to send magic link',
-        variant: 'destructive',
-      });
+      toast({ title: "Check your email", description: `Sign-in link sent to ${data.email}.` });
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
-      setIsLoading(false);
+      setIsLoading(null);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+  const handleGoogle = async () => {
+    setIsLoading("google");
     setError(null);
-
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
-        },
+        provider: "google",
+        options: { redirectTo: callbackUrl(window.location.origin) },
       });
-
       if (error) throw error;
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign in with Google');
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to sign in with Google',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setIsLoading(null);
     }
-  };
-
-  const resetForm = () => {
-    setMagicLinkSent(false);
-    setError(null);
-    form.reset();
   };
 
   if (magicLinkSent) {
     return (
-      <div className="w-full max-w-md mx-auto">
-        <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur">
-          <CardHeader className="text-center pb-6">
-            <div className="mx-auto mb-4 p-3 bg-emerald-100 rounded-full w-fit">
-              <CheckCircle className="w-8 h-8 text-emerald-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">Check Your Email</CardTitle>
-            <p className="text-gray-600 mt-2">
-              We've sent a magic link to <span className="font-semibold text-blue-600">{form.getValues('email')}</span>
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Alert className="border-blue-200 bg-blue-50">
-              <Mail className="w-4 h-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                Click the link in your email to sign in instantly. The link expires in 1 hour.
-              </AlertDescription>
-            </Alert>
-
-            <div className="text-center space-y-4">
-              <p className="text-sm text-gray-600">Didn't receive the email?</p>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetForm();
-                  setAuthMode('magic');
-                }}
-                className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Send Another Link
-              </Button>
-
-              <Button
-                variant="ghost"
-                onClick={resetForm}
-                className="w-full text-gray-600 hover:text-gray-800"
-              >
-                <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
-                Back to Sign In
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-6 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+          <MailCheck className="h-6 w-6" />
+        </span>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-tight">Check your email</h2>
+          <p className="text-sm text-muted-foreground">
+            We sent a sign-in link to{" "}
+            <span className="font-medium text-foreground">{form.getValues("email")}</span>.
+            It expires in 1 hour.
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          className="text-muted-foreground"
+          onClick={() => {
+            setMagicLinkSent(false);
+            setError(null);
+            form.reset();
+          }}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to sign in
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur overflow-hidden">
-        <CardHeader className="text-center pb-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-          <div className="mb-6">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-3xl font-bold">
-            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Welcome to ProjectX
-            </span>
-          </CardTitle>
-          <p className="text-gray-600 mt-2 text-lg">
-            Professional project management platform
-          </p>
-        </CardHeader>
+    <div className="space-y-5">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        <CardContent className="p-8 space-y-6">
-          {error && (
-            <Alert variant="destructive" className="border-red-200 bg-red-50">
-              <AlertCircle className="w-4 h-4" />
-              <AlertDescription className="text-red-800">{error}</AlertDescription>
-            </Alert>
-          )}
+      <Button
+        variant="outline"
+        className="h-11 w-full"
+        onClick={handleGoogle}
+        disabled={!!isLoading}
+      >
+        {isLoading === "google" ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <span className="mr-2">
+            <GoogleIcon />
+          </span>
+        )}
+        Continue with Google
+      </Button>
 
-          {/* Auth Mode Tabs */}
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            <Button
-              type="button"
-              variant={authMode === 'google' ? 'default' : 'ghost'}
-              className={`flex-1 rounded-lg font-medium transition-all ${
-                authMode === 'google' 
-                  ? 'bg-white text-blue-600 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setAuthMode('google')}
-            >
-              <Chrome className="w-4 h-4 mr-2" />
-              Google
-            </Button>
-            <Button
-              type="button"
-              variant={authMode === 'magic' ? 'default' : 'ghost'}
-              className={`flex-1 rounded-lg font-medium transition-all ${
-                authMode === 'magic' 
-                  ? 'bg-white text-purple-600 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setAuthMode('magic')}
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Magic Link
-            </Button>
-          </div>
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          or
+        </span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
 
-          {authMode === 'google' ? (
-            <div className="space-y-6">
-              <Button
-                type="button"
-                className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Image
-                      src="https://authjs.dev/img/providers/google.svg"
-                      alt="Google"
-                      width={24}
-                      height={24}
-                      className="mr-3"
-                    />
-                    Continue with Google
-                    <ArrowRight className="w-5 h-5 ml-3" />
-                  </>
-                )}
-              </Button>
-
-              <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <Lock className="w-4 h-4" />
-                  <span>Secured by Google OAuth 2.0</span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  We never store your Google password
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleMagicLinkSignIn)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="your-email@company.com"
-                            type="email"
-                            autoComplete="email"
-                            className="h-12 border-gray-300 rounded-xl focus:border-purple-500 focus:ring-purple-500"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleMagicLink)} className="space-y-3">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email address</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className="h-11"
+                    {...field}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="h-11 w-full" disabled={!!isLoading}>
+            {isLoading === "magic" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="mr-2 h-4 w-4" />
+            )}
+            Email me a sign-in link
+          </Button>
+        </form>
+      </Form>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                        Sending Magic Link...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-5 h-5 mr-3" />
-                        Send Magic Link
-                        <ArrowRight className="w-5 h-5 ml-3" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-
-              <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Passwordless authentication</span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  Secure sign-in link sent to your email
-                </p>
-              </div>
-            </div>
-          )}
-
-          <Separator className="my-6" />
-
-          <div className="text-center">
-            <p className="text-xs text-gray-400 leading-relaxed">
-              By continuing, you agree to our{' '}
-              <a href="/terms" className="text-blue-600 hover:text-blue-700 underline">
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
-                Privacy Policy
-              </a>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+        By continuing you agree to our{" "}
+        <a href="/terms" className="underline underline-offset-2 hover:text-foreground">Terms</a>{" "}
+        and{" "}
+        <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">Privacy Policy</a>.
+      </p>
     </div>
   );
 }

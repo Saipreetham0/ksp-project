@@ -1,15 +1,14 @@
+import { getUserOr401 } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { Order, CreateOrderRequest, OrderFilters } from '@/types/database';
+import { listOrders, createOrder, logOrderActivity, notifyAdminsOfNewOrder } from '@/features/orders/services/orders.service';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     // Get user profile to check permissions
     const { data: profile } = await supabase
@@ -25,41 +24,18 @@ export async function GET(request: NextRequest) {
     const user_id = searchParams.get('user_id');
     const search = searchParams.get('search');
 
-    let query = supabase
-      .from('orders')
-      .select(`
-        *,
-        user_profiles!orders_user_id_fkey (
-          id,
-          full_name,
-          email,
-          display_name
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    // Apply role-based filtering
-    if (profile?.role === 'user' || profile?.role === 'client') {
-      query = query.eq('user_id', user.id);
-    } else if (user_id && (profile?.role === 'admin' || profile?.role === 'finance' || profile?.role === 'team_lead')) {
-      query = query.eq('user_id', user_id);
-    }
-
-    // Apply filters
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    if (search) {
-      query = query.or(`title.ilike.%${search}%, description.ilike.%${search}%, order_number.ilike.%${search}%`);
-    }
-
-    // Pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-    
-    const { data: orders, error, count } = await query
-      .range(from, to);
+    const { data: orders, error, count } = await listOrders(
+      supabase,
+      {
+        page,
+        limit,
+        status: status || undefined,
+        user_id: user_id || undefined,
+        search: search || undefined
+      },
+      profile?.role,
+      user.id
+    );
 
     if (error) {
       console.error('Database error:', error);
@@ -89,11 +65,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     const body: CreateOrderRequest = await request.json();
 
@@ -125,19 +98,7 @@ export async function POST(request: NextRequest) {
       metadata: {}
     };
 
-    const { data: order, error } = await supabase
-      .from('orders')
-      .insert([orderData])
-      .select(`
-        *,
-        user_profiles!orders_user_id_fkey (
-          id,
-          full_name,
-          email,
-          display_name
-        )
-      `)
-      .single();
+    const { data: order, error } = await createOrder(supabase, orderData);
 
     if (error) {
       console.error('Database error:', error);
@@ -145,32 +106,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Log activity
-    await supabase.from('activity_logs').insert([{
+    await logOrderActivity(supabase, {
       user_id: user.id,
       action: 'created',
-      entity_type: 'order',
       entity_id: order.id,
       description: `Created order: ${order.title}`,
       new_values: order
-    }]);
+    });
 
     // Create notification for admin users
-    const { data: adminUsers } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .in('role', ['admin', 'team_lead']);
-
-    if (adminUsers) {
-      const notifications = adminUsers.map(admin => ({
-        user_id: admin.id,
-        title: 'New Order Created',
-        message: `A new order "${order.title}" has been created by ${user.email}`,
-        type: 'order',
-        related_order_id: order.id
-      }));
-
-      await supabase.from('notifications').insert(notifications);
-    }
+    await notifyAdminsOfNewOrder(supabase, order, user.email || '');
 
     return NextResponse.json({ 
       data: order,

@@ -6,15 +6,19 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // src/lib/utils.ts
-import { PAYMENT_CONFIG } from "./constants";
+export const PAYMENT_CONFIG = {
+  currency: "INR",
+  company_name: "KSP Electronics",
+  upi_id: "9550421866-1@okbizaxis",
+  theme_color: "#0284c7",
+} as const;
 
-
-
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | null | undefined): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: PAYMENT_CONFIG.currency,
-  }).format(amount);
+    maximumFractionDigits: 0,
+  }).format(amount ?? 0);
 }
 
 export function getErrorMessage(error: unknown): string {

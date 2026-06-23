@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { Project, DeliveryAddress, PaymentTransaction } from "@/types/project";
 import { ProjectHeader } from "@/components/projects/ProjectHeader";
 import { ProjectMetrics } from "@/components/projects/ProjectMetrics";
@@ -101,6 +101,7 @@ export default function ProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params?.id as string;
+  const supabase = createClient();
 
   const [project, setProject] = useState<Project | null>(null);
   const [paymentTransaction, setPaymentTransaction] =
@@ -137,7 +138,7 @@ export default function ProjectDetailsPage() {
     try {
       setLoading(true);
       const { data: projectData, error: projectError } = await supabase
-        .from("projects")
+        .from("orders")
         .select("*")
         .eq("id", projectId)
         .single();
@@ -150,9 +151,9 @@ export default function ProjectDetailsPage() {
 
       if (projectData.payment_status === "paid") {
         const { data: paymentData, error: paymentError } = await supabase
-          .from("payment_transactions")
+          .from("payments")
           .select("*")
-          .eq("project_id", projectId)
+          .eq("order_id", projectId)
           .single();
 
         if (paymentError) throw paymentError;
@@ -249,7 +250,7 @@ export default function ProjectDetailsPage() {
       if (deliveryError) throw deliveryError;
 
       const { error: projectError } = await supabase
-        .from("projects")
+        .from("orders")
         .update({ delivery_status: "pending" })
         .eq("id", projectId);
 
@@ -307,7 +308,7 @@ export default function ProjectDetailsPage() {
   const handlePaymentSuccess = async () => {
     try {
       const { error: projectError } = await supabase
-        .from("projects")
+        .from("orders")
         .update({ payment_status: "paid" })
         .eq("id", projectId);
 
@@ -315,9 +316,9 @@ export default function ProjectDetailsPage() {
       setPaymentStatus("paid");
 
       const { data: paymentData, error: paymentError } = await supabase
-        .from("payment_transactions")
+        .from("payments")
         .select("*")
-        .eq("project_id", projectId)
+        .eq("order_id", projectId)
         .single();
 
       if (paymentError) throw paymentError;
@@ -354,9 +355,9 @@ export default function ProjectDetailsPage() {
             </div>
 
             <ProjectMetrics
-              technology={project.technology}
-              teamSize={project.team_size}
-              timeline={project.timeline}
+              technology={project.technology ?? "—"}
+              teamSize={project.team_size ?? 0}
+              timeline={project.timeline ?? 0}
               createdAt={project.created_at}
             />
 

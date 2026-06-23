@@ -1,23 +1,19 @@
+import { getUserOr401 } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { zohoInvoice } from '@/lib/zoho-invoice';
 
 interface RouteParams {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const invoiceId = parseInt(params.id);
+    const invoiceId = parseInt((await params).id);
     if (isNaN(invoiceId)) {
       return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
     }
@@ -87,8 +83,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       description: `Downloaded PDF for invoice ${invoice.invoice_number}`
     }]);
 
-    // Return PDF response
-    return new NextResponse(pdfBuffer, {
+    // Return PDF response (convert Buffer to a Web-stream-compatible body)
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="Invoice-${invoice.invoice_number}.pdf"`,

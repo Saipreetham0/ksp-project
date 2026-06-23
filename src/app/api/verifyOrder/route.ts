@@ -1,41 +1,6 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import crypto from "crypto";
-
-// const generatedSignature = (
-//   razorpayOrderId: string,
-//   razorpayPaymentId: string
-// ) => {
-//   const keySecret = process.env.RAZORPAY_SECRET_ID as string;
-
-//   const sig = crypto
-//     .createHmac("sha256", keySecret)
-//     .update(razorpayOrderId + "|" + razorpayPaymentId)
-//     .digest("hex");
-//   return sig;
-// };
-
-// export async function POST(request: NextRequest) {
-//   const { orderId, razorpayPaymentId, razorpaySignature } =
-//     await request.json();
-
-//   const signature = generatedSignature(orderId, razorpayPaymentId);
-//   if (signature !== razorpaySignature) {
-//     return NextResponse.json(
-//       { message: "payment verification failed", isOk: false },
-//       { status: 400 }
-//     );
-//   }
-
-//   // Probably some database calls here to update order or add premium status to user
-//   return NextResponse.json(
-//     { message: "payment verified successfully", isOk: true },
-//     { status: 200 }
-//   );
-// }
-
 import { NextRequest, NextResponse } from "next/server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import crypto from "crypto";
 
 // Type definitions for better type safety
@@ -74,6 +39,7 @@ const generateSignature = (
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     // Extract payment details from request
     const {
       orderId,
@@ -101,17 +67,19 @@ export async function POST(request: NextRequest) {
 
     if (!isValidSignature) {
       // Save failed payment attempt to Supabase
-      await supabase.from("payment_transactions").insert({
+      await supabase.from("payments").insert({
         user_id: userId,
-        project_id: projectId,
-        order_id: orderId,
-        payment_id: razorpayPaymentId,
+        order_id: parseInt(projectId),
+        reference_number: orderId,
+        transaction_id: razorpayPaymentId,
         amount: amount,
         status: "failed",
         created_at: new Date().toISOString(),
-        payment_method: "razorpay",
+        method: "razorpay",
         currency: "INR",
-        failure_reason: "Invalid signature",
+        notes: "Invalid signature",
+        recorded_by: userId,
+        created_by: userId
       });
 
       return NextResponse.json(
@@ -122,17 +90,19 @@ export async function POST(request: NextRequest) {
 
     // Begin database transaction
     const { data: payment, error: paymentError } = await supabase
-      .from("payment_transactions")
+      .from("payments")
       .insert({
         user_id: userId,
-        project_id: projectId,
-        order_id: orderId,
-        payment_id: razorpayPaymentId,
+        order_id: parseInt(projectId),
+        reference_number: orderId,
+        transaction_id: razorpayPaymentId,
         amount: amount,
-        status: "success",
+        status: "completed",
         created_at: new Date().toISOString(),
-        payment_method: "razorpay",
+        method: "razorpay",
         currency: "INR",
+        recorded_by: userId,
+        created_by: userId
       })
       .select()
       .single();
@@ -144,7 +114,7 @@ export async function POST(request: NextRequest) {
 
       // Verify project exists before updating
       const { data: projectExists, error: projectCheckError } = await supabase
-      .from("projects")
+      .from("orders")
       .select("id")
       .eq("id", projectId)
       .single();
@@ -155,10 +125,10 @@ export async function POST(request: NextRequest) {
 
 
     const { error: projectError } = await supabase
-    .from("projects")
+    .from("orders")
     .update({
-      status: "Processing",
-      payment_status: "Paid"
+      status: "processing",
+      payment_status: "paid"
     })
     .eq("id", projectId)
     .select();

@@ -34,7 +34,7 @@ import { Label } from "@/components/ui/label";
 // Firebase imports removed - replaced with Supabase
 // import { auth, db } from "@/lib/firebase";
 // import { doc, updateDoc } from "firebase/firestore";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { Loader2,  Bell,
     // Mail, Shield, Trash2
 } from "lucide-react";
@@ -55,6 +55,8 @@ interface SettingsProps {
 }
 
 export default function SettingsPage({ initialSettings }: SettingsProps) {
+  const supabase = createClient();
+  const { toast } = useToast();
 //   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
@@ -67,7 +69,6 @@ export default function SettingsPage({ initialSettings }: SettingsProps) {
       initialSettings?.timezone ??
       Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
-  const { toast } = useToast();
   const handleSaveSettings = async () => {
     // Get current user from Supabase
     const { data: { user } } = await supabase.auth.getUser();

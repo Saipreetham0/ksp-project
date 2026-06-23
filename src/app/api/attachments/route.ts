@@ -1,15 +1,12 @@
+import { getUserOr401 } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -45,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
-    const filename = `${uuidv4()}.${fileExt}`;
+    const filename = `${crypto.randomUUID()}.${fileExt}`;
     const bucketPath = `attachments/${user.id}/${filename}`;
 
     // Upload to Supabase Storage
@@ -193,11 +190,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     const searchParams = request.nextUrl.searchParams;
     const orderId = searchParams.get('order_id');

@@ -2,204 +2,59 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Common Commands
+## Commands
 
-### Development
-- `npm run dev` - Start development server with turbopack
-- `npm run build` - Build production bundle
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint to check code quality
+- `npm run dev` — dev server (Next.js with `--turbopack`)
+- `npm run build` — production build
+- `npm run start` — serve the production build
+- `npm run lint` — ESLint (`next lint`)
 
-### Package Management
-Project uses npm with lock files for both npm (`package-lock.json`) and pnpm (`pnpm-lock.yaml`). Use npm commands by default.
+There is no test runner configured in this repo — there are no test files and no `test` script.
 
-## Architecture Overview
+### Package management
+Both `package-lock.json` and `pnpm-lock.yaml` are committed. `pnpm-workspace.yaml` exists but this is a single-package repo. Default to `npm`. React/React-DOM are pinned to a 19 RC build, and `@types/react`/`@types/react-dom` are remapped via `overrides` to RC type packages — keep those overrides intact when touching dependencies or installs will break type-checking.
 
-### Tech Stack
-- **Framework**: Next.js 15 with App Router
-- **UI**: React 19 RC with Radix UI components and Tailwind CSS
-- **Authentication**: Supabase Auth with enhanced role system
-- **Database**: Supabase PostgreSQL with comprehensive schema
-- **Payments**: Razorpay + Zoho Payments integration
-- **Invoicing**: Zoho Invoice API integration with PDF generation
-- **File Storage**: Supabase Storage for attachments
-- **State Management**: React Context with enhanced auth state
-- **Forms**: React Hook Form with Zod validation
-- **Monitoring**: Activity logging and notification system
+## Architecture
 
-### Enhanced Project Structure
+Next.js 15 App Router + React 19 RC, TypeScript, Tailwind, Radix UI. Path alias `@/*` → `src/*`.
 
-#### App Router Structure
-- `(Public)/` - Public landing pages
-- `(user-panel)/` - Standard user dashboard
-  - `/dashboard` - User dashboard with notifications
-  - `/projects` - User's orders/projects
-  - `/referrals`, `/settings` - User management
-- `(adminpanel)/` - Admin interface
-  - `/admin` - Admin dashboard with comprehensive analytics
-  - `/admin/orders` - Complete order management
-  - `/admin/users` - User and role management
-  - `/admin/invoices` - Invoice management
-  - `/admin/tasks` - Task management system
+### Authentication & middleware (the important part)
+Auth is **Supabase Auth** (the project was migrated from Firebase in commit `eda6b9c`; large blocks of commented-out Firebase code still litter files like `src/middlewares/withAuth.ts` and `src/app/middleware.ts` — ignore them).
 
-#### API Structure
-- `api/orders/` - Enhanced order management with full CRUD
-- `api/invoices/` - Invoice generation, PDF, email sending
-- `api/tasks/` - Task management with assignment and tracking
-- `api/notifications/` - Notification system
-- `api/attachments/` - File upload and management
+Three Supabase client entry points, do not mix them up:
+- `src/utils/supabase/client.ts` — browser singleton (`createClient()`), use in Client Components.
+- `src/utils/supabase/server.ts` — async server client backed by `next/headers` cookies, use in Server Components, Route Handlers, and Server Actions (`await createClient()`).
+- `src/utils/supabase/middleware.ts` — `updateSession()`, refreshes the auth cookie on every request.
 
-#### Component Organization
-- `components/ui/` - Radix UI components with Tailwind
-- `components/layouts/` - Enhanced layouts with role-based navigation
-- `components/orders/` - Complete order management components
-- `components/invoices/` - Invoice creation, viewing, and management
-- `components/tasks/` - Kanban board and task management
-- `components/notifications/` - Notification center and alerts
-- `components/attachments/` - File upload and management
+The active Next.js middleware lives at **`src/app/middleware.ts`** (not the conventional `src/middleware.ts`), and it just delegates to `updateSession()`. That function does coarse route gating: it redirects unauthenticated users away from paths prefixed `/dashboard`, `/admin`, `/user-panel`, `/private`, `/adminpanel`, and redirects authenticated users off `/login`. It does **not** enforce roles.
 
-### Enhanced Authentication & Authorization
+### Authorization (roles)
+There are **two parallel role systems** — be deliberate about which you use:
+- Legacy 3-role (`user`/`moderator`/`admin`): `src/lib/roles.ts`.
+- Current 6-role: `src/types/auth.ts` defines `UserRole`, `ROLE_HIERARCHY` (admin 100, finance 80, team_lead 70, moderator 60, user 40, client 20), `DEFAULT_PERMISSIONS`, `canAccessRole`, and `hasPermission`. Prefer this system (the `src/types/auth.ts` helpers) for new code.
 
-#### Supabase Auth with Role System
-- Enhanced user profiles with granular permissions
-- Six role types: admin, finance, team_lead, moderator, user, client
-- Role-based route protection and component access
-- Permission-based API access control
+Authorization is **enforced per-route, not centrally**. API route handlers call `supabase.auth.getUser()`, then read the user's `role`/`permissions` from the `user_profiles` table and branch inline (e.g. clients/users are scoped to their own `user_id`, while admin/finance/team_lead see all). The expectation is that Supabase Row-Level Security backs this up at the DB layer. When adding an endpoint, replicate this pattern — auth check → load profile → role/ownership filter.
 
-#### Role Hierarchy (highest to lowest):
-1. **Admin** (100) - Full system access
-2. **Finance** (80) - Invoice, payment, financial reports
-3. **Team Lead** (70) - Task management, team coordination
-4. **Moderator** (60) - Order management, content moderation
-5. **User** (40) - Standard user, can create orders
-6. **Client** (20) - View-only access to own orders/invoices
+`AuthProvider` (`src/app/context/AuthContext.tsx`, consumed via `useAuth()`) only exposes the raw Supabase `user` and a `loading` flag; it blocks rendering children until the session resolves. Role/permission hooks live in `src/hooks/` (`useRole`, `useAuth`, `useAuthSession`).
 
-#### Enhanced Features
-- Row-level security policies in database
-- Activity logging for all actions
-- Real-time notifications
-- File attachment system with access control
+### Routing layout
+App Router with route groups: `(Public)`, `(user-panel)`, `(adminpanel)`. Note that many top-level feature folders (`src/app/orders`, `/invoices`, `/tasks`, `/payments`, `/users`, `/reports`, `/files`, `/submit`, `/dashboard`) sit **outside** the route groups in addition to the grouped versions — there is overlap/duplication between e.g. `src/app/orders` and `src/app/(adminpanel)/admin/orders`. Check both when locating a page.
 
-### Complete Feature Set (PRD Compliant)
+API route handlers live under `src/app/api/**/route.ts`: `orders`, `invoices` (incl. `[id]/pdf`, `[id]/send`, `send`), `tasks`, `notifications`, `attachments`, plus Razorpay `createOrder`/`verifyOrder`.
 
-#### 1. Orders Module ✅
-- Full order lifecycle: Draft → Processing → Shipped → Delivered → Completed
-- Team member assignment and collaboration
-- File attachments (documents, images, etc.)
-- Delivery address and tracking
-- Order status management with notifications
+### Integrations
+- **Payments**: Razorpay (`razorpay` SDK; `api/createOrder` + `api/verifyOrder`). Keys: `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_SECRET_ID`. UPI display via `NEXT_PUBLIC_UPI_ID`.
+- **Invoicing / Zoho**: `src/lib/zoho-invoice.ts` and `src/lib/zoho-integration.ts`. Note the Zoho env vars referenced in code are **not** present in the committed `.env` — Zoho features will be inert without them.
+- **WooCommerce**: `src/lib/woocommerce.ts` (`WOOCOMMERCE_*`, `NEXT_PUBLIC_WORDPRESS_SITE_URL`).
+- **Monitoring**: Sentry (`@sentry/nextjs`) is a dependency.
+- Drag-and-drop (Kanban) uses `@hello-pangea/dnd`; charts use `recharts`; forms use React Hook Form + Zod.
 
-#### 2. Invoice Module ✅
-- Zoho Invoice API integration
-- Automatic invoice generation from orders
-- PDF generation and download
-- Email sending capabilities
-- Payment status linking and tracking
-- Manual and recurring invoice creation
+### Database schema — caution
+There are **six** overlapping SQL files at the repo root: `database-schema.sql`, `database-schema-fixed.sql`, and `supabase-{complete,corrected,fixed,minimal-migration}-schema.sql`. They are not consistent with each other. Before relying on any of them, confirm which one matches the live Supabase project rather than assuming the schema docs in this file. Core tables referenced by code: `user_profiles`, `orders`, `invoices`, `tasks`, `notifications`, `attachments`, `activity_logs`. TypeScript shapes live in `src/types/database.ts`.
 
-#### 3. Task Management ✅
-- Kanban board interface (To-Do → In Progress → Review → Done)
-- Task assignment with due dates and priorities
-- Progress tracking and time estimation
-- Task dependencies and relationships
-- Team productivity analytics
+### Config notes
+- `next.config.ts` uses CommonJS `module.exports` despite the `.ts` extension; it only configures remote image hosts (`lh3.googleusercontent.com`, `gstatic.com`).
+- ESLint (`.eslintrc.json`) downgrades `no-explicit-any`, `no-unused-vars` (ignores `_`-prefixed args), and `react-hooks/exhaustive-deps` to **warnings**, so `npm run lint` passing does not guarantee these are clean.
 
-#### 4. Payment Processing ✅
-- Razorpay integration (existing)
-- Payment recording and verification
-- Due date reminders
-- Payment history and analytics
-- Integration with invoice system
-
-#### 5. User Management ✅
-- Enhanced role-based access control
-- User invitation system (ready for email integration)
-- Activity logging and audit trails
-- Permission management interface
-
-#### 6. File Management ✅
-- Supabase Storage integration
-- File attachments for orders, tasks, invoices
-- Access level control (private, team, public)
-- Multiple file type support (images, PDFs, documents)
-
-#### 7. Notification System ✅
-- Real-time in-app notifications
-- Email notifications (infrastructure ready)
-- Activity-based automatic notifications
-- Notification center with filtering
-
-#### 8. Dashboard & Analytics ✅
-- Role-based dashboard views
-- Order metrics and analytics
-- Task completion tracking
-- Revenue and payment analytics
-- User activity monitoring
-
-### Database Schema
-
-Comprehensive database with 8+ tables:
-- `orders` - Enhanced order management
-- `invoices` - Invoice tracking with Zoho integration
-- `tasks` - Task management with assignment
-- `notifications` - Notification system
-- `user_profiles` - Enhanced user management
-- `attachments` - File storage and access control
-- `activity_logs` - Audit trail system
-- Row-level security policies for data protection
-
-### Environment Variables Required
-
-#### Core System
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-
-#### Zoho Integration
-- `ZOHO_INVOICE_CLIENT_ID` - Zoho Invoice API client ID
-- `ZOHO_INVOICE_CLIENT_SECRET` - Zoho Invoice API secret
-- `ZOHO_INVOICE_REFRESH_TOKEN` - Refresh token for API access
-- `ZOHO_ORGANIZATION_ID` - Zoho organization ID
-
-#### Payment Processing
-- Razorpay keys (existing setup)
-
-### Development & Deployment Notes
-
-#### Migration Process
-- Full database migration script provided in `database-schema.sql`
-- Migration guide in `DATABASE_MIGRATION.md`
-- Backward compatibility maintained for existing features
-
-#### Testing
-- All API endpoints implement proper error handling
-- Role-based access control tested
-- File upload security measures in place
-- Activity logging for debugging and auditing
-
-#### Production Readiness
-- Build process verified and optimized
-- ESLint configuration updated for new codebase
-- Environment variable validation
-- Comprehensive error handling and user feedback
-
-### Key Implementation Files
-
-#### Database & Types
-- `database-schema.sql` - Complete database schema
-- `src/types/database.ts` - Comprehensive TypeScript types
-- `src/types/auth.ts` - Enhanced authentication types
-
-#### Core Systems
-- `src/lib/zoho-invoice.ts` - Zoho API integration
-- `src/lib/enhanced-roles.ts` - Role management system
-- `src/utils/supabase/` - Supabase client configurations
-
-#### Feature Modules
-- `src/app/api/orders/` - Order management APIs
-- `src/app/api/invoices/` - Invoice system APIs
-- `src/app/api/tasks/` - Task management APIs
-- `src/components/orders/` - Order management UI
-- `src/components/tasks/TaskBoard.tsx` - Kanban interface
-- `src/components/notifications/NotificationCenter.tsx` - Notification UI
-
-The system now fully implements the PRD requirements with a production-ready, scalable architecture supporting complete project and order lifecycle management.
+## Other docs
+`ADMIN_PANEL_GUIDE.md`, `DATABASE_MIGRATION.md`, `DEPLOYMENT.md`, `QUICK_SETUP.md`, `FEATURE_GAP_ANALYSIS.md`, and `project-order-management-platform.md` (the PRD) exist but predate parts of the current code — treat them as background, verify against source.

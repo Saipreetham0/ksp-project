@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm outdated *)",
+      "Bash(npm update *)",
+      "Bash(awk 'NR==1 || $2 != $3')",
+      "Bash(npm ls *)",
+      "Bash(npm view *)",
+      "Bash(npm audit *)",
+      "Bash(python3 /private/tmp/claude-501/-Users-koyyalasaipreetham-Desktop-01-Projects-Web-Projects-projectx/1fed2bd1-01d1-48f6-9730-9c947659d7be/scratchpad/find_unused.py)",
+      "Bash(python3 -c \"import sys,json;print\\(json.load\\(sys.stdin\\)['version']\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(perl -pi -e 's/userId: user\\\\.uid,/userId: user.id,/g; s/name: user\\\\.displayName \\\\|\\\\| undefined,/name: user.user_metadata?.full_name || undefined,/g' src/components/payment/RazorpayPayment.tsx)",
+      "Bash(perl -pi -e 's/task\\\\.assigned_to !== user\\\\.id/task.assigned_to !== user?.id/g; s/t\\\\.assigned_to === user\\\\.id/t.assigned_to === user?.id/g' src/components/tasks/TaskManagement.tsx)",
+      "Bash(grep -rA8 \"const getStatusColor\" src/components/student/StudentDashboard.tsx src/components/dashboard/ModernDashboard.tsx)",
+      "Bash(grep -rhnE \"NumberFormat|toLocaleString|currency.*INR|₹\\\\{|\\\\\\\\\\\\$\\\\{.*toFixed\" src --include=\"*.tsx\")",
+      "Bash(grep -rhA7 \"getStatusColor = \" src/components/student/StudentDashboard.tsx src/components/orders/OrdersManagement.tsx)",
+      "Bash(echo \"BUILD EXIT: $?\")",
+      "Bash(grep -E \"Compiled|/$|error|Error|MessageCircle\" /tmp/b.log)",
+      "Bash(perl -0pi -e 's/  CardDescription,\\\\n  CardContent,\\\\n/  CardDescription,\\\\n/' \"src/app/\\(Public\\)/page.tsx\")",
+      "Bash(grep -E \"Compiled successfully|✓.*/$|^┌ ○ /$\" /tmp/b.log)",
+      "Bash(cd /Users/koyyalasaipreetham/Desktop/01_Projects/Web_Projects/projectx *)",
+      "Bash(grep -E \"^[┌├└].*\\( / |/$\\)\" /tmp/b.log)",
+      "Bash(grep -E \"/ |/$|First Load|shared\")"
+    ],
+    "additionalDirectories": [
+      "/Users/koyyalasaipreetham/Desktop/01_Projects/Web_Projects/projectx/src/app/(adminpanel)/admin/users/[id]"
+    ]
+  }
+}

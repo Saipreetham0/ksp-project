@@ -54,6 +54,7 @@ interface ZohoInvoiceResponse {
   total: number;
   balance: number;
   invoice_url: string;
+  permalink?: string;
   customer_id: string;
   line_items: Array<{
     line_item_id: string;
@@ -133,22 +134,19 @@ class ZohoInvoiceAPI {
   }
 
   async createCustomer(customerData: {
-    name: string;
+    name?: string;
+    display_name?: string;
+    contact_name?: string;
     email: string;
     phone?: string;
-    billing_address?: {
-      street: string;
-      city: string;
-      state: string;
-      zip: string;
-      country: string;
-    };
-  }): Promise<ZohoCustomer> {
+    company_name?: string;
+    billing_address?: any;
+  }): Promise<any> {
     const payload = {
-      contact_name: customerData.name,
-      customer_name: customerData.name,
+      contact_name: customerData.name || customerData.contact_name || customerData.display_name || '',
       email: customerData.email,
       phone: customerData.phone,
+      company_name: customerData.company_name,
       billing_address: customerData.billing_address
     };
 
@@ -305,6 +303,16 @@ class ZohoInvoiceAPI {
     }
   }
 
+  async getCustomerByEmail(email: string) {
+    try {
+      const response = await this.makeZohoRequest(`/contacts?email=${encodeURIComponent(email)}`);
+      return response.contacts?.[0] || null;
+    } catch (error) {
+      console.error('Error fetching Zoho customer:', error);
+      return null;
+    }
+  }
+
   // Utility methods
   isConfigured(): boolean {
     return !!(
@@ -325,6 +333,10 @@ class ZohoInvoiceAPI {
     }
   }
 }
+
+// Export class definition for instantiation if needed
+export { ZohoInvoiceAPI };
+export default ZohoInvoiceAPI;
 
 // Export singleton instance
 export const zohoInvoice = new ZohoInvoiceAPI();
@@ -353,3 +365,34 @@ export const formatCurrencyForZoho = (amount: number, currency = 'INR'): string 
     currency: currency
   }).format(amount);
 };
+
+// Helper function to format order data for Zoho invoice
+export function formatOrderForZohoInvoice(
+  order: any,
+  customer: any,
+  lineItems: any[]
+): any {
+  return {
+    customer_id: customer.contact_id,
+    customer_name: customer.display_name,
+    customer_email: customer.email,
+    date: new Date().toISOString().split('T')[0],
+    due_date: order.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    line_items: lineItems,
+    notes: order.description || '',
+    terms: 'Payment due within 30 days of invoice date.',
+  };
+}
+
+// Helper function to calculate invoice totals
+export function calculateInvoiceTotals(lineItems: any[], taxRate: number = 18) {
+  const subtotal = lineItems.reduce((sum, item) => sum + (item.rate * item.quantity), 0);
+  const taxAmount = (subtotal * taxRate) / 100;
+  const total = subtotal + taxAmount;
+
+  return {
+    sub_total: subtotal,
+    tax_total: taxAmount,
+    total: total,
+  };
+}

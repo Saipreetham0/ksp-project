@@ -328,6 +328,7 @@ export interface CreateInvoiceRequest {
   amount: number;
   tax_amount?: number;
   discount_amount?: number;
+  invoice_date?: string;
   due_date?: string;
   customer_email?: string;
   customer_name?: string;

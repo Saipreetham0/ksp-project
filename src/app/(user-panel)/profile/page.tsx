@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 // Firebase imports removed - replaced with Supabase
 // import { auth, db } from "@/lib/firebase";
 // import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -27,6 +27,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const supabase = createClient();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);

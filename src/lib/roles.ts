@@ -2,15 +2,22 @@
 import { UserRole } from '@/types/auth';
 
 export const ROLES: Record<UserRole, string> = {
-  user: 'User',
   admin: 'Administrator',
-  moderator: 'Moderator'
+  finance: 'Finance Manager',
+  team_lead: 'Team Lead',
+  moderator: 'Moderator',
+  user: 'User',
+  client: 'Client',
 };
 
-export const ROLE_PERMISSIONS = {
-  user: ['read:own_profile', 'update:own_profile'],
+export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  admin: ['read:own_profile', 'update:own_profile', 'read:users', 'update:users', 'delete:users', 'manage:roles'],
   moderator: ['read:own_profile', 'update:own_profile', 'read:users', 'moderate:content'],
-  admin: ['read:own_profile', 'update:own_profile', 'read:users', 'update:users', 'delete:users', 'manage:roles']
+  user: ['read:own_profile', 'update:own_profile'],
+  // ponytail: empty until something reads these. Upgrade: fill per role when enforced.
+  finance: [],
+  team_lead: [],
+  client: [],
 };
 
 

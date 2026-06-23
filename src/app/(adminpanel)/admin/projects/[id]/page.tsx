@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { PaymentSection } from "@/components/admin/PaymentSection";
 import { DeliverySection } from "@/components/admin/DeliverySection";
 import { DeliveryManagementSection } from "@/components/admin/DeliveryManagementSection";
@@ -406,6 +406,7 @@ export default function ProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params?.id as string;
+  const supabase = createClient();
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -426,7 +427,7 @@ export default function ProjectDetailsPage() {
     try {
       setLoading(true);
       const { data: projectData, error: projectError } = await supabase
-        .from("projects")
+        .from("orders")
         .select("*")
         .eq("id", projectId)
         .single();
@@ -451,7 +452,7 @@ export default function ProjectDetailsPage() {
     setIsSubmitting(true);
     try {
       const { error: updateError } = await supabase
-        .from("projects")
+        .from("orders")
         .update(updatedProject)
         .eq("id", projectId);
 

@@ -1,3 +1,4 @@
+import { getUserOr401 } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { CreateTaskRequest, TaskFilters } from '@/types/database';
@@ -5,11 +6,8 @@ import { CreateTaskRequest, TaskFilters } from '@/types/database';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     // Get user profile to check permissions
     const { data: profile } = await supabase
@@ -108,11 +106,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getUserOr401(supabase);
+    if (user instanceof NextResponse) return user;
 
     // Check permissions - team leads and admins can create tasks
     const { data: profile } = await supabase

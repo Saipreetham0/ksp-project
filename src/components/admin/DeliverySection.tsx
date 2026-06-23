@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 
 interface DeliveryMilestone {
   id: string;
@@ -87,6 +87,7 @@ const AddMilestoneDialog = ({
   projectId: string;
   onMilestoneAdded: () => void;
 }) => {
+  const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [date, setDate] = useState<Date>();
@@ -225,6 +226,7 @@ const UpdateMilestoneDialog = ({
   milestone: DeliveryMilestone;
   onUpdate: () => void;
 }) => {
+  const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState(milestone.status);
   const [notes, setNotes] = useState(milestone.notes || "");
@@ -309,6 +311,7 @@ const UpdateMilestoneDialog = ({
 
 // Main Delivery Section Component
 export const DeliverySection = ({ projectId }: DeliverySectionProps) => {
+  const supabase = createClient();
   const [milestones, setMilestones] = useState<DeliveryMilestone[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

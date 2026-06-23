@@ -1,5 +1,7 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
+type CookieToSet = { name: string; value: string; options: CookieOptions }
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -14,7 +16,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
@@ -38,7 +40,9 @@ export async function updateSession(request: NextRequest) {
 
   // If there's an auth error, don't redirect - let the page handle it
   if (error) {
-    console.log('Auth middleware error:', error.message)
+    if (error.message !== 'Auth session missing!' && error.message !== 'Auth session missing') {
+      console.log('Auth middleware error:', error.message)
+    }
     return supabaseResponse
   }
 

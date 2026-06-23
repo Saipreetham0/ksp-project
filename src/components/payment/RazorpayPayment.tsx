@@ -68,7 +68,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         body: JSON.stringify({
           amount: amount * 100,
           projectId,
-          userId: user.uid,
+          userId: user.id,
         }),
       });
 
@@ -96,7 +96,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 orderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
-                userId: user.uid,
+                userId: user.id,
                 amount:amount,
                 projectId: projectId
               }),
@@ -127,7 +127,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           }
         },
         prefill: {
-          name: user.displayName || undefined,
+          name: user.user_metadata?.full_name || undefined,
           email: user.email || undefined,
         },
         theme: {

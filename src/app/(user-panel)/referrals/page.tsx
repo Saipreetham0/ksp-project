@@ -102,7 +102,7 @@ const StudentReferralDashboard: React.FC = () => {
 
       // Fetch projects for earnings calculation
       const { data: projects, error: projectsError } = await supabase
-        .from('projects')
+        .from('orders')
         .select('*')
         .eq('user_id', userId)
 
@@ -123,7 +123,7 @@ const StudentReferralDashboard: React.FC = () => {
       // Process users data with their projects
       const processedUsers = await Promise.all(users.map(async (user) => {
         const { data: userProjects } = await supabase
-          .from('projects')
+          .from('orders')
           .select('*')
           .eq('user_id', user.id)
 

@@ -35,12 +35,13 @@ import {
   Clock3,
   Search,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { Project } from '@/types/project';
 
 const ITEMS_PER_PAGE = 9;
 
 const ProjectsPage = () => {
+  const supabase = createClient();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,7 +55,7 @@ const ProjectsPage = () => {
     setLoading(true);
     try {
       let query = supabase
-        .from('projects')
+        .from('orders')
         .select('*', { count: 'exact' });
 
       // Apply filters

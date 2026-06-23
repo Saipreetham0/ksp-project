@@ -33,7 +33,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Truck, MapPin, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 const DeliveryStatus = {
   PENDING: "pending",
@@ -43,6 +43,7 @@ const DeliveryStatus = {
 };
 
 export const DeliveryManagementSection = ({ projectId }: { projectId: string }) => {
+  const supabase = createClient();
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -62,7 +63,7 @@ export const DeliveryManagementSection = ({ projectId }: { projectId: string }) 
 
       // Fetch project delivery status
       const { data: projectData } = await supabase
-        .from('projects')
+        .from('orders')
         .select('delivery_status, tracking_link')
         .eq('id', projectId)
         .single();
@@ -112,7 +113,7 @@ export const DeliveryManagementSection = ({ projectId }: { projectId: string }) 
   const updateDeliveryStatus = async (status: string) => {
     try {
       const { error } = await supabase
-        .from('projects')
+        .from('orders')
         .update({ delivery_status: status })
         .eq('id', projectId);
 
@@ -126,7 +127,7 @@ export const DeliveryManagementSection = ({ projectId }: { projectId: string }) 
   const saveTrackingLink = async () => {
     try {
       const { error } = await supabase
-        .from('projects')
+        .from('orders')
         .update({ tracking_link: trackingLink })
         .eq('id', projectId);
 

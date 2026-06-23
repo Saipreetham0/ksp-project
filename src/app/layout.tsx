@@ -1,14 +1,38 @@
-// import type { Metadata } from "next";
-// import Footer from "@/components/Footer";
-// import Navbar from "@/components/NavBar";
+import type { Metadata } from "next";
+import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 
-// export const metadata: Metadata = {
-//   title: "KSP Projects",
-//   description: "Empowering students with cutting-edge IoT and ML solutions",
-// };
-
 import { Providers } from "./providers";
+
+// Body / UI — best-in-class legibility for data-dense dashboards.
+const inter = Inter({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Headings / display — technical character, on-brand for electronics.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Data — IDs, prices, order numbers.
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "KSP Electronics — Project & Order Management",
+    template: "%s · KSP Electronics",
+  },
+  description:
+    "Manage orders, invoices, tasks and payments in one operational workspace.",
+};
 
 export default function RootLayout({
   children,
@@ -16,20 +40,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script src="https://checkout.razorpay.com/v1/checkout.js" defer />
       </head>
       <body
-        suppressHydrationWarning={true}
-        className="flex min-h-screen flex-col"
+        suppressHydrationWarning
+        className="min-h-screen bg-background font-sans text-foreground"
       >
-        <main className="flex-1">
-          {/* <Navbar /> */}
-          <Providers>{children}</Providers>
-          {/* {children} */}
-          {/* <Footer /> */}
-        </main>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
